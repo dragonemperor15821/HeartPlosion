@@ -2069,25 +2069,30 @@ class HeartPlosion {
     // GALLERY
     // =========================================================
 
-    enterGallery() {
+   enterGallery() {
+    this.state = "gallery";
 
-        this.state =
-            "gallery";
+    // ALWAYS begin with Photo 1
+    this.currentPhoto = 0;
 
-        this.currentPhoto =
-            0;
+    this.photoTransition = 1;
+    this.photoTransitionDirection = 0;
 
-        this.photoTransition =
-            1;
+    // Reset swipe tracking so the hand movement
+    // that triggered the gallery does NOT count
+    // as an immediate swipe.
+    this.previousLeftX = null;
+    this.leftSwipeStartX = null;
 
+    // Give the gallery a short settling period
+    this.leftSwipeCooldown = 45;
 
-        if (this.status) {
-
-            this.status.textContent =
-                "Swipe with your left hand ← →";
-        }
+    if (this.status) {
+        this.status.textContent =
+            "Photo 1 / " + this.photoImages.length +
+            "  •  Swipe with your left hand ← →";
     }
-
+}
 
     nextPhoto() {
 
