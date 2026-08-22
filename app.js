@@ -48,10 +48,6 @@ class HeartPlosion {
         this.loading = document.getElementById("loading");
         this.instructions = document.getElementById("instructions");
         this.status = document.getElementById("status");
-        this.birthdaySong =
-    document.getElementById("birthdaySong");
-
-this.musicStarted = false;
 
 
         // =====================================================
@@ -140,22 +136,22 @@ this.musicStarted = false;
         */
 
         this.photos = [
-    "photos/04038a35-ebc8-43d8-82f7-af50bacc7bc8.png",
-    "photos/3201213d-2b18-414f-8c27-3d0d8420baf0.png",
-    "photos/45a7ab2e-f0c4-425c-9055-18392ffe2e79.png",
-    "photos/47297113-5dca-4938-891c-b29e21421c20.png",
-    "photos/474a367b-7a7f-417b-9491-514c34ee8fc4.png",
-    "photos/4e628c2b-b46f-4e5b-bdcd-866a268a88e0.png",
-    "photos/6c90650a-3416-47b9-ba11-ce80e3552d0e.png",
-    "photos/7ba9c0ad-7601-4b3a-891d-8bc128388a52.png",
-    "photos/8c954ef8-05d3-4b51-bea1-98b0c862a1a1.png",
-    "photos/9a48fd46-c676-49a1-a4d3-bb8c7316134f.png",
-    "photos/a4a4e4e1-e791-4eaa-97af-1196d4ec1d46.png",
-    "photos/ad89e326-7178-4add-898a-9c9550d98f7b.png",
-    "photos/c0caece1-71f6-4f87-94a5-34bcf2a767d2.png",
-    "photos/ddc381d9-61aa-403e-9591-a3c57308f181.png",
-    "photos/df94c751-ad9d-498c-9053-5f3ded1ed72e.png"
-];
+            "photos/04038a35-ebc8-43d8-82f7-af50bacc7bc8.png",
+            "photos/3201213d-2b18-414f-8c27-3d0d8420baf0.png",
+            "photos/45a7ab2e-f0c4-425c-9055-18392ffe2e79.png",
+            "photos/47297113-5dca-4938-891c-b29e21421c20.png",
+            "photos/474a367b-7a7f-417b-9491-514c34ee8fc4.png",
+            "photos/4e628c2b-b46f-4e5b-bdcd-866a268a88e0.png",
+            "photos/6c90650a-3416-47b9-ba11-ce80e3552d0e.png",
+            "photos/7ba9c0ad-7601-4b3a-891d-8bc128388a52.png",
+            "photos/8c954ef8-05d3-4b51-bea1-98b0c862a1a1.png",
+            "photos/9a48fd46-c676-49a1-a4d3-bb8c7316134f.png",
+            "photos/a4a4e4e1-e791-4eaa-97af-1196d4ec1d46.png",
+            "photos/ad89e326-7178-4add-898a-9c9550d98f7b.png",
+            "photos/c0caece1-71f6-4f87-94a5-34bcf2a767d2.png",
+            "photos/ddc381d9-61aa-403e-9591-a3c57308f181.png",
+            "photos/df94c751-ad9d-498c-9053-5f3ded1ed72e.png"
+        ];
 
         this.photoImages = [];
 
@@ -334,33 +330,6 @@ this.musicStarted = false;
                 this.onHandResults(results)
         );
 
-       startMusic() {
-
-    if (
-        this.musicStarted ||
-        !this.birthdaySong
-    ) {
-        return;
-    }
-
-    this.birthdaySong.volume = 0.7;
-
-    this.birthdaySong
-        .play()
-        .then(() => {
-
-            this.musicStarted = true;
-
-        })
-        .catch((error) => {
-
-            console.log(
-                "Music waiting for user interaction:",
-                error
-            );
-        });
-}
-
 
         const camera =
             new Camera(
@@ -407,6 +376,7 @@ this.musicStarted = false;
                     "Camera error:",
                     error
                 );
+
 
                 if (this.status) {
 
@@ -471,14 +441,10 @@ this.musicStarted = false;
 
         if (this.rightHand) {
 
-    // Start the birthday song on the first
-    // meaningful hand interaction.
-    this.startMusic();
-
-    this.rightFistAmount =
-        this.calculateFistAmount(
-            this.rightHand
-        );
+            this.rightFistAmount =
+                this.calculateFistAmount(
+                    this.rightHand
+                );
 
 
             this.rightOpenAmount =
@@ -514,6 +480,7 @@ this.musicStarted = false;
                     this.targetHeartProgress =
                         1;
 
+
                     if (this.status) {
 
                         this.status.textContent =
@@ -528,6 +495,7 @@ this.musicStarted = false;
                     this.state =
                         "joining";
 
+
                     if (this.status) {
 
                         this.status.textContent =
@@ -538,6 +506,7 @@ this.musicStarted = false;
 
                     this.state =
                         "heart";
+
 
                     if (this.status) {
 
@@ -601,7 +570,6 @@ this.musicStarted = false;
 
                 this.leftSwipeStartX =
                     x;
-
             }
 
 
@@ -752,6 +720,7 @@ this.musicStarted = false;
             amount =
                 Math.max(
                     0,
+
                     Math.min(
                         1,
                         amount
@@ -844,6 +813,7 @@ this.musicStarted = false;
             amount =
                 Math.max(
                     0,
+
                     Math.min(
                         1,
                         amount
@@ -914,8 +884,10 @@ this.musicStarted = false;
         this.explosionTriggered =
             true;
 
+
         this.state =
             "exploding";
+
 
         this.explosionTimer =
             0;
@@ -1159,6 +1131,7 @@ this.musicStarted = false;
 
         glow.addColorStop(
             0,
+
             `rgba(255, 90, 160, ${
                 0.18 +
                 progress *
@@ -1169,6 +1142,7 @@ this.musicStarted = false;
 
         glow.addColorStop(
             0.5,
+
             `rgba(170, 70, 255, ${
                 0.10 +
                 progress *
@@ -1179,6 +1153,7 @@ this.musicStarted = false;
 
         glow.addColorStop(
             1,
+
             "rgba(100, 0, 150, 0)"
         );
 
@@ -1277,6 +1252,7 @@ this.musicStarted = false;
                 -size * 0.02
             );
         }
+
 
         ctx.restore();
 
@@ -1394,36 +1370,36 @@ this.musicStarted = false;
 
         ctx.bezierCurveTo(
             -size *
-                0.15,
+            0.15,
             size *
-                0.48,
+            0.48,
 
             -size *
-                0.65,
+            0.65,
             size *
-                0.10,
+            0.10,
 
             -size *
-                0.65,
+            0.65,
             -size *
-                0.20
+            0.20
         );
 
 
         ctx.bezierCurveTo(
             -size *
-                0.65,
+            0.65,
             -size *
-                0.58,
+            0.58,
 
             -size *
-                0.18,
+            0.18,
             -size *
-                0.70,
+            0.70,
 
             0,
             -size *
-                0.40
+            0.40
         );
 
 
@@ -1462,21 +1438,21 @@ this.musicStarted = false;
         const gradient =
             ctx.createRadialGradient(
                 cw *
-                    0.5,
+                0.5,
                 ch *
-                    0.45,
+                0.45,
                 0,
 
                 cw *
-                    0.5,
+                0.5,
                 ch *
-                    0.45,
+                0.45,
 
                 Math.max(
                     cw,
                     ch
                 ) *
-                    0.75
+                0.75
             );
 
 
@@ -1485,15 +1461,18 @@ this.musicStarted = false;
             "#281020"
         );
 
+
         gradient.addColorStop(
             0.38,
             "#150814"
         );
 
+
         gradient.addColorStop(
             0.72,
             "#09030b"
         );
+
 
         gradient.addColorStop(
             1,
@@ -1517,18 +1496,18 @@ this.musicStarted = false;
         const purple =
             ctx.createRadialGradient(
                 cw *
-                    0.18,
+                0.18,
                 ch *
-                    0.25,
+                0.25,
                 0,
 
                 cw *
-                    0.18,
+                0.18,
                 ch *
-                    0.25,
+                0.25,
 
                 cw *
-                    0.6
+                0.6
             );
 
 
@@ -1536,6 +1515,7 @@ this.musicStarted = false;
             0,
             "rgba(150, 50, 255, 0.10)"
         );
+
 
         purple.addColorStop(
             1,
@@ -1632,16 +1612,16 @@ this.musicStarted = false;
 
             ctx.arc(
                 p.x *
-                    this.canvas.width,
+                this.canvas.width,
 
                 p.y *
-                    this.canvas.height,
+                this.canvas.height,
 
                 p.size,
 
                 0,
                 Math.PI *
-                    2
+                2
             );
 
 
@@ -1731,16 +1711,16 @@ this.musicStarted = false;
 
             ctx.arc(
                 p.x *
-                    this.canvas.width,
+                this.canvas.width,
 
                 p.y *
-                    this.canvas.height,
+                this.canvas.height,
 
                 p.size,
 
                 0,
                 Math.PI *
-                    2
+                2
             );
 
 
@@ -1859,12 +1839,12 @@ this.musicStarted = false;
         const left =
             ctx.createRadialGradient(
                 -wing *
-                    0.55,
+                0.55,
                 0,
                 1,
 
                 -wing *
-                    0.55,
+                0.55,
                 0,
                 wing
             );
@@ -1892,19 +1872,21 @@ this.musicStarted = false;
 
         ctx.beginPath();
 
+
         ctx.ellipse(
             -wing *
-                0.55,
+            0.55,
             -wing *
-                0.1,
+            0.1,
             wing *
-                0.75,
+            0.75,
             wing,
             -0.4,
             0,
             Math.PI *
-                2
+            2
         );
+
 
         ctx.fill();
 
@@ -1913,12 +1895,12 @@ this.musicStarted = false;
         const right =
             ctx.createRadialGradient(
                 wing *
-                    0.55,
+                0.55,
                 0,
                 1,
 
                 wing *
-                    0.55,
+                0.55,
                 0,
                 wing
             );
@@ -1946,19 +1928,21 @@ this.musicStarted = false;
 
         ctx.beginPath();
 
+
         ctx.ellipse(
             wing *
-                0.55,
+            0.55,
             -wing *
-                0.1,
+            0.1,
             wing *
-                0.75,
+            0.75,
             wing,
             0.4,
             0,
             Math.PI *
-                2
+            2
         );
+
 
         ctx.fill();
 
@@ -1972,18 +1956,20 @@ this.musicStarted = false;
 
         ctx.beginPath();
 
+
         ctx.ellipse(
             0,
             0,
             b.size *
-                0.08,
+            0.08,
             b.size *
-                0.55,
+            0.55,
             0,
             0,
             Math.PI *
-                2
+            2
         );
+
 
         ctx.fill();
 
@@ -2066,12 +2052,12 @@ this.musicStarted = false;
                 0,
                 0,
                 p.size *
-                    0.55,
+                0.55,
                 p.size,
                 0,
                 0,
                 Math.PI *
-                    2
+                2
             );
 
 
@@ -2188,7 +2174,7 @@ this.musicStarted = false;
                 : Math.min(
                     470,
                     cw *
-                        0.46
+                    0.46
                 );
 
 
@@ -2199,16 +2185,16 @@ this.musicStarted = false;
 
         const x =
             cw *
-                0.5 -
+            0.5 -
             cardWidth *
-                0.5;
+            0.5;
 
 
         const y =
             ch *
-                0.47 -
+            0.47 -
             cardHeight *
-                0.5;
+            0.5;
 
 
         // Gentle floating motion
@@ -2225,11 +2211,11 @@ this.musicStarted = false;
 
         ctx.translate(
             cw *
-                0.5,
+            0.5,
             y +
-                cardHeight *
-                    0.5 +
-                float
+            cardHeight *
+            0.5 +
+            float
         );
 
 
@@ -2268,9 +2254,9 @@ this.musicStarted = false;
 
         ctx.fillRect(
             -cardWidth *
-                0.5,
+            0.5,
             -cardHeight *
-                0.5,
+            0.5,
             cardWidth,
             cardHeight
         );
@@ -2287,20 +2273,20 @@ this.musicStarted = false;
 
         const photoX =
             -cardWidth *
-                0.5 +
+            0.5 +
             margin;
 
 
         const photoY =
             -cardHeight *
-                0.5 +
+            0.5 +
             margin;
 
 
         const photoW =
             cardWidth -
             margin *
-                2;
+            2;
 
 
         const photoH =
@@ -2364,10 +2350,10 @@ this.musicStarted = false;
             img,
 
             -drawW *
-                0.5,
+            0.5,
 
             -drawH *
-                0.5,
+            0.5,
 
             drawW,
             drawH
@@ -2409,7 +2395,7 @@ this.musicStarted = false;
             `${Math.max(
                 11,
                 cardWidth *
-                    0.026
+                0.026
             )}px serif`;
 
 
@@ -2421,7 +2407,7 @@ this.musicStarted = false;
             `${this.currentPhoto + 1} / ${this.photoImages.length}`,
             0,
             cardHeight *
-                0.455
+            0.455
         );
 
 
@@ -2509,7 +2495,7 @@ this.musicStarted = false;
                 0,
                 0,
                 size *
-                    2.4
+                2.4
             );
 
 
@@ -2539,10 +2525,10 @@ this.musicStarted = false;
             0,
             0,
             size *
-                2.4,
+            2.4,
             0,
             Math.PI *
-                2
+            2
         );
 
         ctx.fill();
@@ -2596,75 +2582,75 @@ this.musicStarted = false;
         ctx.moveTo(
             0,
             size *
-                0.75
+            0.75
         );
 
 
         ctx.bezierCurveTo(
             -size *
-                0.75,
+            0.75,
             size *
-                0.20,
+            0.20,
 
             -size *
-                0.82,
+            0.82,
             -size *
-                0.45,
+            0.45,
 
             -size *
-                0.40,
+            0.40,
             -size *
-                0.62
+            0.62
         );
 
 
         ctx.bezierCurveTo(
             -size *
-                0.18,
+            0.18,
             -size *
-                0.72,
+            0.72,
 
             0,
             -size *
-                0.50,
+            0.50,
 
             0,
             -size *
-                0.30
+            0.30
         );
 
 
         ctx.bezierCurveTo(
             0,
             -size *
-                0.50,
+            0.50,
 
             size *
-                0.18,
+            0.18,
             -size *
-                0.72,
+            0.72,
 
             size *
-                0.40,
+            0.40,
             -size *
-                0.62
+            0.62
         );
 
 
         ctx.bezierCurveTo(
             size *
-                0.82,
+            0.82,
             -size *
-                0.45,
+            0.45,
 
             size *
-                0.75,
+            0.75,
             size *
-                0.20,
+            0.20,
 
             0,
             size *
-                0.75
+            0.75
         );
 
 
@@ -2717,7 +2703,7 @@ this.musicStarted = false;
                 Math.min(
                     42,
                     cw *
-                        0.055
+                    0.055
                 )
             )}px serif`;
 
@@ -2725,9 +2711,9 @@ this.musicStarted = false;
         ctx.fillText(
             "Happy Birthday",
             cw *
-                0.5,
+            0.5,
             ch *
-                0.70
+            0.70
         );
 
 
@@ -2737,7 +2723,7 @@ this.musicStarted = false;
                 Math.min(
                     29,
                     cw *
-                        0.035
+                    0.035
                 )
             )}px serif`;
 
@@ -2754,11 +2740,11 @@ this.musicStarted = false;
                 ctx.fillText(
                     line,
                     cw *
-                        0.5,
+                    0.5,
                     ch *
-                        0.76 +
-                        index *
-                        32
+                    0.76 +
+                    index *
+                    32
                 );
             }
         );
@@ -2846,10 +2832,10 @@ this.musicStarted = false;
 
             this.drawHeart(
                 this.canvas.width *
-                    0.5,
+                0.5,
 
                 this.canvas.height *
-                    0.46,
+                0.46,
 
                 size,
 
