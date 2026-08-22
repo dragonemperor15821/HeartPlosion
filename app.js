@@ -612,16 +612,11 @@ class HeartPlosion {
                     this.swipeThreshold
                 ) {
 
-                    if (
-                        totalSwipe < 0
-                    ) {
-
-                        this.nextPhoto();
-
-                    } else {
-
-                        this.previousPhoto();
-                    }
+                    if (totalSwipe > 0) {
+    this.nextPhoto();
+} else {
+    this.previousPhoto();
+}
 
 
                     this.leftSwipeStartX =
