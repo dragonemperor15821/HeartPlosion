@@ -135,7 +135,7 @@ class HeartPlosion {
             is working.
         */
 
-        const photos = [
+        this.photos = [
     "photos/photo01.png",
     "photos/photo02.png",
     "photos/photo03.png",
