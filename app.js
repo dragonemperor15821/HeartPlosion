@@ -415,18 +415,20 @@ class HeartPlosion {
 
 
             if (
-                handedness &&
-                handedness.label === "Right"
-            ) {
+    handedness &&
+    handedness.label === "Left"
+) {
 
-                this.rightHand =
-                    hand;
+    // MediaPipe's label is reversed because
+    // our camera input is not mirrored for detection.
+    // "Left" here corresponds to the user's physical RIGHT hand.
+    this.rightHand = hand;
 
-            } else {
+} else {
 
-                this.leftHand =
-                    hand;
-            }
+    // "Right" corresponds to the user's physical LEFT hand.
+    this.leftHand = hand;
+}
         }
 
 
