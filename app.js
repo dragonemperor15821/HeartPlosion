@@ -334,6 +334,33 @@ this.musicStarted = false;
                 this.onHandResults(results)
         );
 
+       startMusic() {
+
+    if (
+        this.musicStarted ||
+        !this.birthdaySong
+    ) {
+        return;
+    }
+
+    this.birthdaySong.volume = 0.7;
+
+    this.birthdaySong
+        .play()
+        .then(() => {
+
+            this.musicStarted = true;
+
+        })
+        .catch((error) => {
+
+            console.log(
+                "Music waiting for user interaction:",
+                error
+            );
+        });
+}
+
 
         const camera =
             new Camera(
