@@ -415,20 +415,20 @@ class HeartPlosion {
 
 
             if (
-    handedness &&
-    handedness.label === "Left"
-) {
+                handedness &&
+                handedness.label === "Left"
+            ) {
 
-    // MediaPipe's label is reversed because
-    // our camera input is not mirrored for detection.
-    // "Left" here corresponds to the user's physical RIGHT hand.
-    this.rightHand = hand;
+                // MediaPipe's label is reversed because
+                // our camera input is not mirrored for detection.
+                // "Left" here corresponds to the user's physical RIGHT hand.
+                this.rightHand = hand;
 
-} else {
+            } else {
 
-    // "Right" corresponds to the user's physical LEFT hand.
-    this.leftHand = hand;
-}
+                // "Right" corresponds to the user's physical LEFT hand.
+                this.leftHand = hand;
+            }
         }
 
 
@@ -480,7 +480,7 @@ class HeartPlosion {
                     if (this.status) {
 
                         this.status.textContent =
-                            "Hold it... ❤️";
+                            "Open your right hand ✋ to explode the heart";
                     }
 
                 } else if (
@@ -519,9 +519,7 @@ class HeartPlosion {
                 this.heartJoined &&
                 !this.explosionTriggered &&
                 this.rightOpenAmount >
-                0.80 &&
-                this.previousRightOpen <
-                0.65
+                0.55
             ) {
 
                 this.explodeHeart();
@@ -1188,42 +1186,62 @@ class HeartPlosion {
             true
         );
 
-       // -----------------------------------------------------
-// Labels inside the heart halves
-// -----------------------------------------------------
 
-ctx.save();
+        // -----------------------------------------------------
+        // Labels inside the heart halves
+        // -----------------------------------------------------
 
-// The canvas is mirrored with CSS, so compensate
-// here so the text appears normal to the user.
-ctx.scale(-1, 1);
+        ctx.save();
 
-ctx.textAlign = "center";
-ctx.textBaseline = "middle";
+        // The canvas is mirrored with CSS, so compensate
+        // here so the text appears normal to the user.
+        ctx.scale(-1, 1);
 
-ctx.font = `italic ${Math.max(22, size * 0.20)}px cursive`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
 
-ctx.fillStyle = "rgba(255, 245, 252, 0.96)";
-ctx.shadowBlur = 18;
-ctx.shadowColor = "rgba(255, 120, 200, 0.9)";
+        ctx.font =
+            `italic ${Math.max(22, size * 0.20)}px cursive`;
 
-// Visual LEFT half = "You"
-// Because the canvas is mirrored, visual-left
-// corresponds to positive canvas X.
-ctx.fillText(
-    "You",
-    separation,
-    -size * 0.02
-);
+        ctx.fillStyle =
+            "rgba(255, 245, 252, 0.96)";
 
-// Visual RIGHT half = "Me"
-ctx.fillText(
-    "Me",
-    -separation,
-    -size * 0.02
-);
+        ctx.shadowBlur = 18;
 
-ctx.restore();
+        ctx.shadowColor =
+            "rgba(255, 120, 200, 0.9)";
+
+
+        // When the halves are together, show a single "Us"
+        // instead of allowing "You" and "Me" to overlap.
+        if (progress > 0.96) {
+
+            ctx.fillText(
+                "Us",
+                0,
+                -size * 0.02
+            );
+
+        } else {
+
+            // Visual LEFT half = "You"
+            // Because the canvas is mirrored, visual-left
+            // corresponds to positive canvas X.
+            ctx.fillText(
+                "You",
+                separation,
+                -size * 0.02
+            );
+
+            // Visual RIGHT half = "Me"
+            ctx.fillText(
+                "Me",
+                -separation,
+                -size * 0.02
+            );
+        }
+
+        ctx.restore();
 
 
         // -----------------------------------------------------
@@ -2181,7 +2199,7 @@ ctx.restore();
         const rotation =
             Math.sin(
                 this.currentPhoto *
-                    1.7
+                1.7
             ) *
             0.025;
 
@@ -2250,7 +2268,7 @@ ctx.restore();
 
         const photoH =
             cardHeight *
-                0.76;
+            0.76;
 
 
         ctx.save();
@@ -2703,7 +2721,7 @@ ctx.restore();
                     ch *
                         0.76 +
                         index *
-                            32
+                        32
                 );
             }
         );
