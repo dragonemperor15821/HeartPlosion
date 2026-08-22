@@ -48,6 +48,10 @@ class HeartPlosion {
         this.loading = document.getElementById("loading");
         this.instructions = document.getElementById("instructions");
         this.status = document.getElementById("status");
+        this.birthdaySong =
+    document.getElementById("birthdaySong");
+
+this.musicStarted = false;
 
 
         // =====================================================
