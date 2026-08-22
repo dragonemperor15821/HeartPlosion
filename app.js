@@ -32,6 +32,7 @@
    Happy Birthday My Wifey...
    ============================================================ */
 
+
 class HeartPlosion {
 
     constructor() {
@@ -48,6 +49,149 @@ class HeartPlosion {
         this.loading = document.getElementById("loading");
         this.instructions = document.getElementById("instructions");
         this.status = document.getElementById("status");
+
+
+        // =====================================================
+        // BACKGROUND MUSIC
+        // =====================================================
+
+        // Music starts when the heart explodes.
+        // The first user interaction unlocks audio for browsers
+        // that block autoplay until the user interacts.
+
+        this.music = new Audio(
+            "audio/new_west_-_those_eyes_sped_up_(mp3.pm).mp3"
+        );
+
+        this.music.loop = true;
+        this.music.preload = "auto";
+        this.music.volume = 0.65;
+
+        this.musicStarted = false;
+        this.musicUnlocked = false;
+
+
+        // -----------------------------------------------------
+        // Unlock audio on first user interaction
+        // -----------------------------------------------------
+
+        this.unlockMusic = () => {
+
+            if (this.musicUnlocked) {
+                return;
+            }
+
+            const originalVolume =
+                this.music.volume;
+
+            // Play silently for a moment so the browser
+            // considers the audio element unlocked.
+
+            this.music.volume = 0;
+
+            const unlockPromise =
+                this.music.play();
+
+            if (
+                unlockPromise &&
+                typeof unlockPromise.then === "function"
+            ) {
+
+                unlockPromise
+                    .then(() => {
+
+                        this.music.pause();
+
+                        this.music.currentTime = 0;
+
+                        this.music.volume =
+                            originalVolume;
+
+                        this.musicUnlocked = true;
+
+                    })
+                    .catch(() => {
+
+                        this.music.volume =
+                            originalVolume;
+
+                    });
+
+            } else {
+
+                this.music.pause();
+
+                this.music.currentTime = 0;
+
+                this.music.volume =
+                    originalVolume;
+
+                this.musicUnlocked = true;
+            }
+        };
+
+
+        // -----------------------------------------------------
+        // Start music
+        // -----------------------------------------------------
+
+        this.startMusic = () => {
+
+            // Prevent the music from restarting
+            // if explodeHeart() somehow fires twice.
+
+            if (this.musicStarted) {
+                return;
+            }
+
+            this.musicStarted = true;
+
+            this.music.currentTime = 0;
+
+            this.music.volume = 0.65;
+
+            const playPromise =
+                this.music.play();
+
+            if (
+                playPromise &&
+                typeof playPromise.catch === "function"
+            ) {
+
+                playPromise.catch((error) => {
+
+                    console.warn(
+                        "Music autoplay was blocked:",
+                        error
+                    );
+
+                    this.musicStarted = false;
+                });
+            }
+        };
+
+
+        // -----------------------------------------------------
+        // Browser audio unlock
+        // -----------------------------------------------------
+
+        window.addEventListener(
+            "pointerdown",
+            this.unlockMusic,
+            {
+                once: true,
+                passive: true
+            }
+        );
+
+        window.addEventListener(
+            "keydown",
+            this.unlockMusic,
+            {
+                once: true,
+                passive: true
+            }
+        );
 
 
         // =====================================================
@@ -227,9 +371,11 @@ class HeartPlosion {
 
             this.particles.push({
 
-                x: Math.random(),
+                x:
+                    Math.random(),
 
-                y: Math.random(),
+                y:
+                    Math.random(),
 
                 size:
                     Math.random() * 2.2 + 0.4,
@@ -268,6 +414,7 @@ class HeartPlosion {
                 const img =
                     new Image();
 
+
                 img.onload = () => {
 
                     this.photoImages[index] =
@@ -275,12 +422,14 @@ class HeartPlosion {
 
                     loaded++;
 
+
                     if (
                         loaded ===
                         this.photos.length
                     ) {
 
-                        this.galleryReady = true;
+                        this.galleryReady =
+                            true;
                     }
                 };
 
@@ -346,8 +495,10 @@ class HeartPlosion {
                         });
                     },
 
+
                     // Lower camera resolution
                     // reduces tracking lag
+
                     width: 640,
 
                     height: 480
@@ -502,6 +653,7 @@ class HeartPlosion {
                     this.targetHeartProgress =
                         1;
 
+
                     if (this.status) {
 
                         this.status.textContent =
@@ -516,6 +668,7 @@ class HeartPlosion {
                     this.state =
                         "joining";
 
+
                     if (this.status) {
 
                         this.status.textContent =
@@ -526,6 +679,7 @@ class HeartPlosion {
 
                     this.state =
                         "heart";
+
 
                     if (this.status) {
 
@@ -925,6 +1079,16 @@ class HeartPlosion {
             true;
 
 
+        // =====================================================
+        // START BIRTHDAY MUSIC
+        // =====================================================
+
+        // The song begins at the exact moment
+        // the completed heart explodes.
+
+        this.startMusic();
+
+
         this.state =
             "exploding";
 
@@ -1202,6 +1366,7 @@ class HeartPlosion {
 
         ctx.beginPath();
 
+
         ctx.arc(
             0,
             0,
@@ -1209,6 +1374,7 @@ class HeartPlosion {
             0,
             Math.PI * 2
         );
+
 
         ctx.fill();
 
@@ -1279,6 +1445,7 @@ class HeartPlosion {
                 separation,
                 -size * 0.02
             );
+
 
             // Visual RIGHT half = Me
 
