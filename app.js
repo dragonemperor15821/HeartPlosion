@@ -471,10 +471,14 @@ this.musicStarted = false;
 
         if (this.rightHand) {
 
-            this.rightFistAmount =
-                this.calculateFistAmount(
-                    this.rightHand
-                );
+    // Start the birthday song on the first
+    // meaningful hand interaction.
+    this.startMusic();
+
+    this.rightFistAmount =
+        this.calculateFistAmount(
+            this.rightHand
+        );
 
 
             this.rightOpenAmount =
