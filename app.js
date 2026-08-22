@@ -1205,10 +1205,6 @@ class HeartPlosion {
 
         ctx.save();
 
-        // The canvas is mirrored with CSS, so compensate
-        // here so the text appears normal to the user.
-        ctx.scale(-1, 1);
-
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
 
