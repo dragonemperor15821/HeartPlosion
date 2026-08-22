@@ -1188,6 +1188,43 @@ class HeartPlosion {
             true
         );
 
+       // -----------------------------------------------------
+// Labels inside the heart halves
+// -----------------------------------------------------
+
+ctx.save();
+
+// The canvas is mirrored with CSS, so compensate
+// here so the text appears normal to the user.
+ctx.scale(-1, 1);
+
+ctx.textAlign = "center";
+ctx.textBaseline = "middle";
+
+ctx.font = `italic ${Math.max(22, size * 0.20)}px cursive`;
+
+ctx.fillStyle = "rgba(255, 245, 252, 0.96)";
+ctx.shadowBlur = 18;
+ctx.shadowColor = "rgba(255, 120, 200, 0.9)";
+
+// Visual LEFT half = "You"
+// Because the canvas is mirrored, visual-left
+// corresponds to positive canvas X.
+ctx.fillText(
+    "You",
+    separation,
+    -size * 0.02
+);
+
+// Visual RIGHT half = "Me"
+ctx.fillText(
+    "Me",
+    -separation,
+    -size * 0.02
+);
+
+ctx.restore();
+
 
         // -----------------------------------------------------
         // Complete heart pulse
