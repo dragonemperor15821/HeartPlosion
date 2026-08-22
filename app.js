@@ -2090,44 +2090,45 @@ class HeartPlosion {
 }
 
     nextPhoto() {
+    if (
+        this.currentPhoto <
+        this.photoImages.length - 1
+    ) {
+        this.currentPhoto++;
 
-        if (
-            this.currentPhoto <
-            this.photoImages.length -
-            1
-        ) {
+        this.photoTransition = 0;
+        this.photoTransitionDirection = -1;
 
-            this.currentPhoto++;
-
-            this.photoTransition =
-                0;
-
-            this.photoTransitionDirection =
-                -1;
-
-        } else {
-
-            this.finishGallery();
+        if (this.status) {
+            this.status.textContent =
+                "Photo " +
+                (this.currentPhoto + 1) +
+                " / " +
+                this.photoImages.length +
+                "  •  Swipe with your left hand ← →";
         }
+    } else {
+        this.finishGallery();
     }
-
+}
 
     previousPhoto() {
+    if (this.currentPhoto > 0) {
+        this.currentPhoto--;
 
-        if (
-            this.currentPhoto >
-            0
-        ) {
+        this.photoTransition = 0;
+        this.photoTransitionDirection = 1;
 
-            this.currentPhoto--;
-
-            this.photoTransition =
-                0;
-
-            this.photoTransitionDirection =
-                1;
+        if (this.status) {
+            this.status.textContent =
+                "Photo " +
+                (this.currentPhoto + 1) +
+                " / " +
+                this.photoImages.length +
+                "  •  Swipe with your left hand ← →";
         }
     }
+}
 
 
     // =========================================================
