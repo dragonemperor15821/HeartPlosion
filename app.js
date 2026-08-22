@@ -462,60 +462,45 @@ class HeartPlosion {
                 this.state === "joining"
             ) {
 
-                this.targetHeartProgress =
-                    this.rightFistAmount;
+                this.targetHeartProgress = Math.max(
+    0,
+    Math.min(
+        1,
+        (this.rightFistAmount - 0.42) / 0.50
+    )
+);
 
+if (this.rightFistAmount > 0.88) {
 
-                if (
-                    this.rightFistAmount >
-                    0.78
-                ) {
+    this.state = "joining";
 
-                    this.state =
-                        "joining";
+    this.heartJoined = true;
 
-                    this.heartJoined =
-                        true;
+    this.targetHeartProgress = 1;
 
-                    this.targetHeartProgress =
-                        1;
+    if (this.status) {
+        this.status.textContent =
+            "Open your right hand ✋ to explode the heart";
+    }
 
+} else if (this.rightFistAmount > 0.42) {
 
-                    if (this.status) {
+    this.state = "joining";
 
-                        this.status.textContent =
-                            "Open your right hand ✋ to explode the heart";
-                    }
+    if (this.status) {
+        this.status.textContent =
+            "Bring us together...";
+    }
 
-                } else if (
-                    this.rightFistAmount >
-                    0.25
-                ) {
+} else {
 
-                    this.state =
-                        "joining";
+    this.state = "heart";
 
-
-                    if (this.status) {
-
-                        this.status.textContent =
-                            "Bring us together...";
-                    }
-
-                } else {
-
-                    this.state =
-                        "heart";
-
-
-                    if (this.status) {
-
-                        this.status.textContent =
-                            "Close your right hand ✊";
-                    }
-                }
-            }
-
+    if (this.status) {
+        this.status.textContent =
+            "Close your right hand ✊";
+    }
+}
 
             // -------------------------------------------------
             // EXPLOSION
@@ -2791,12 +2776,12 @@ class HeartPlosion {
         // -----------------------------------------------------
 
         this.heartProgress +=
-            (
-                this.targetHeartProgress -
-                this.heartProgress
-            ) *
-            0.08 *
-            dt;
+    (
+        this.targetHeartProgress -
+        this.heartProgress
+    ) *
+    0.08 *
+    dt;
 
 
         // -----------------------------------------------------
