@@ -136,20 +136,22 @@ class HeartPlosion {
         */
 
         this.photos = [
-            "photos/photo01.jpg",
-            "photos/photo02.jpg",
-            "photos/photo03.jpg",
-            "photos/photo04.jpg",
-            "photos/photo05.jpg",
-            "photos/photo06.jpg",
-            "photos/photo07.jpg",
-            "photos/photo08.jpg",
-            "photos/photo09.jpg",
-            "photos/photo10.jpg",
-            "photos/photo11.jpg",
-            "photos/photo12.jpg",
-            "photos/photo13.jpg"
-        ];
+    "photos/04038a35-ebc8-43d8-82f7-af50bacc7bc8.png",
+    "photos/3201213d-2b18-414f-8c27-3d0d8420baf0.png",
+    "photos/45a7ab2e-f0c4-425c-9055-18392ffe2e79.png",
+    "photos/47297113-5dca-4938-891c-b29e21421c20.png",
+    "photos/474a367b-7a7f-417b-9491-514c34ee8fc4.png",
+    "photos/4e628c2b-b46f-4e5b-bdcd-866a268a88e0.png",
+    "photos/6c90650a-3416-47b9-ba11-ce80e3552d0e.png",
+    "photos/7ba9c0ad-7601-4b3a-891d-8bc128388a52.png",
+    "photos/8c954ef8-05d3-4b51-bea1-98b0c862a1a1.png",
+    "photos/9a48fd46-c676-49a1-a4d3-bb8c7316134f.png",
+    "photos/a4a4e4e1-e791-4eaa-97af-1196d4ec1d46.png",
+    "photos/ad89e326-7178-4add-898a-9c9550d98f7b.png",
+    "photos/c0caece1-71f6-4f87-94a5-34bcf2a767d2.png",
+    "photos/ddc381d9-61aa-403e-9591-a3c57308f181.png",
+    "photos/df94c751-ad9d-498c-9053-5f3ded1ed72e.png"
+];
 
         this.photoImages = [];
 
