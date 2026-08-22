@@ -116,48 +116,49 @@ class HeartPlosion {
 
         this.previousRightOpen = 0;
 
-        // Left-hand swipe tracking
+
+        // =====================================================
+        // LEFT HAND SWIPE TRACKING
+        // =====================================================
+
         this.previousLeftX = null;
         this.leftSwipeStartX = null;
         this.leftSwipeCooldown = 0;
 
-        // Prevent multiple swipe triggers
-        this.swipeThreshold = 0.13;
+        // Lower threshold = faster response
+        this.swipeThreshold = 0.075;
+
+        // Minimum movement between frames
+        this.swipeVelocityThreshold = 0.012;
 
 
         // =====================================================
         // GALLERY
         // =====================================================
 
-        /*
-            We will replace these placeholder paths with your
-            actual GitHub image filenames after the core system
-            is working.
-        */
-
         this.photos = [
-    "photos/photo01.png",
-    "photos/photo02.png",
-    "photos/photo03.png",
-    "photos/photo04.png",
-    "photos/photo05.png",
-    "photos/photo06.png",
-    "photos/photo07.png",
-    "photos/photo08.png",
-    "photos/photo09.png",
-    "photos/photo10.png",
-    "photos/photo11.png",
-    "photos/photo12.png",
-    "photos/photo13.png",
-    "photos/photo14.png",
-    "photos/photo15.png"
-];
+            "photos/photo01.png",
+            "photos/photo02.png",
+            "photos/photo03.png",
+            "photos/photo04.png",
+            "photos/photo05.png",
+            "photos/photo06.png",
+            "photos/photo07.png",
+            "photos/photo08.png",
+            "photos/photo09.png",
+            "photos/photo10.png",
+            "photos/photo11.png",
+            "photos/photo12.png",
+            "photos/photo13.png",
+            "photos/photo14.png",
+            "photos/photo15.png"
+        ];
 
         this.photoImages = [];
 
         this.currentPhoto = 0;
 
-        this.photoTransition = 0;
+        this.photoTransition = 1;
 
         this.photoTransitionDirection = 0;
 
@@ -317,7 +318,8 @@ class HeartPlosion {
 
             maxNumHands: 2,
 
-            modelComplexity: 1,
+            // Lower complexity = much smoother tracking
+            modelComplexity: 0,
 
             minDetectionConfidence: 0.65,
 
@@ -344,9 +346,11 @@ class HeartPlosion {
                         });
                     },
 
-                    width: 1280,
+                    // Lower camera resolution
+                    // reduces tracking lag
+                    width: 640,
 
-                    height: 720
+                    height: 480
                 }
             );
 
@@ -424,12 +428,14 @@ class HeartPlosion {
 
                 // MediaPipe's label is reversed because
                 // our camera input is not mirrored for detection.
-                // "Left" here corresponds to the user's physical RIGHT hand.
+                // "Left" here corresponds to user's physical RIGHT hand.
+
                 this.rightHand = hand;
 
             } else {
 
-                // "Right" corresponds to the user's physical LEFT hand.
+                // "Right" corresponds to user's physical LEFT hand.
+
                 this.leftHand = hand;
             }
         }
@@ -462,45 +468,73 @@ class HeartPlosion {
                 this.state === "joining"
             ) {
 
-                this.targetHeartProgress = Math.max(
-    0,
-    Math.min(
-        1,
-        (this.rightFistAmount - 0.42) / 0.50
-    )
-);
+                /*
+                    More gradual fist response.
 
-if (this.rightFistAmount > 0.88) {
+                    0.42 = movement starts
+                    0.88 = proper closed fist
+                */
 
-    this.state = "joining";
+                this.targetHeartProgress =
+                    Math.max(
+                        0,
+                        Math.min(
+                            1,
+                            (
+                                this.rightFistAmount -
+                                0.42
+                            ) / 0.50
+                        )
+                    );
 
-    this.heartJoined = true;
 
-    this.targetHeartProgress = 1;
+                if (
+                    this.rightFistAmount >
+                    0.88
+                ) {
 
-    if (this.status) {
-        this.status.textContent =
-            "Open your right hand ✋ to explode the heart";
-    }
+                    this.state =
+                        "joining";
 
-} else if (this.rightFistAmount > 0.42) {
+                    this.heartJoined =
+                        true;
 
-    this.state = "joining";
+                    this.targetHeartProgress =
+                        1;
 
-    if (this.status) {
-        this.status.textContent =
-            "Bring us together...";
-    }
+                    if (this.status) {
 
-} else {
+                        this.status.textContent =
+                            "Open your right hand ✋ to explode the heart";
+                    }
 
-    this.state = "heart";
+                } else if (
+                    this.rightFistAmount >
+                    0.42
+                ) {
 
-    if (this.status) {
-        this.status.textContent =
-            "Close your right hand ✊";
-    }
-}
+                    this.state =
+                        "joining";
+
+                    if (this.status) {
+
+                        this.status.textContent =
+                            "Bring us together...";
+                    }
+
+                } else {
+
+                    this.state =
+                        "heart";
+
+                    if (this.status) {
+
+                        this.status.textContent =
+                            "Close your right hand ✊";
+                    }
+                }
+            }
+
 
             // -------------------------------------------------
             // EXPLOSION
@@ -531,7 +565,7 @@ if (this.rightFistAmount > 0.88) {
 
 
         // =====================================================
-        // LEFT HAND / SWIPES
+        // LEFT HAND / SMOOTH SWIPES
         // =====================================================
 
         if (this.leftHand) {
@@ -555,60 +589,86 @@ if (this.rightFistAmount > 0.88) {
 
                 this.leftSwipeStartX =
                     x;
-            }
 
+            } else {
 
-            const movement =
-                x -
-                this.previousLeftX;
-
-
-            this.previousLeftX =
-                x;
-
-
-            // -----------------------------------------------
-            // Gallery swipe detection
-            // -----------------------------------------------
-
-            if (
-                this.state ===
-                "gallery"
-            ) {
-
-                if (
-                    this.leftSwipeCooldown >
-                    0
-                ) {
-
-                    return;
-                }
-
-
-                const totalSwipe =
+                const movement =
                     x -
-                    this.leftSwipeStartX;
+                    this.previousLeftX;
 
+
+                this.previousLeftX =
+                    x;
+
+
+                // -------------------------------------------------
+                // Gallery swipe detection
+                // -------------------------------------------------
 
                 if (
-                    Math.abs(
-                        totalSwipe
-                    ) >
-                    this.swipeThreshold
+                    this.state ===
+                    "gallery"
                 ) {
 
-                    if (totalSwipe > 0) {
-    this.nextPhoto();
-} else {
-    this.previousPhoto();
-}
+                    if (
+                        this.leftSwipeCooldown >
+                        0
+                    ) {
+
+                        return;
+                    }
 
 
-                    this.leftSwipeStartX =
-                        x;
+                    const totalSwipe =
+                        x -
+                        this.leftSwipeStartX;
 
-                    this.leftSwipeCooldown =
-                        25;
+
+                    /*
+                        Require BOTH:
+                        1. enough total movement
+                        2. enough movement between frames
+
+                        This makes swipes responsive
+                        without triggering from tiny movement.
+                    */
+
+                    if (
+                        Math.abs(totalSwipe) >
+                        this.swipeThreshold &&
+                        Math.abs(movement) >
+                        this.swipeVelocityThreshold
+                    ) {
+
+                        /*
+                            Moving hand left
+                            = next photo
+
+                            Moving hand right
+                            = previous photo
+                        */
+
+                        if (
+                            totalSwipe < 0
+                        ) {
+
+                            this.nextPhoto();
+
+                        } else {
+
+                            this.previousPhoto();
+                        }
+
+
+                        // Reset immediately
+                        // for next swipe
+
+                        this.leftSwipeStartX =
+                            x;
+
+                        this.leftSwipeCooldown =
+                            8;
+                    }
                 }
             }
 
@@ -1099,13 +1159,11 @@ if (this.rightFistAmount > 0.88) {
             ctx.createRadialGradient(
                 0,
                 0,
-                size *
-                0.1,
+                size * 0.1,
 
                 0,
                 0,
-                size *
-                1.6
+                size * 1.6
             );
 
 
@@ -1147,11 +1205,9 @@ if (this.rightFistAmount > 0.88) {
         ctx.arc(
             0,
             0,
-            size *
-            1.6,
+            size * 1.6,
             0,
-            Math.PI *
-            2
+            Math.PI * 2
         );
 
         ctx.fill();
@@ -1180,7 +1236,7 @@ if (this.rightFistAmount > 0.88) {
 
 
         // -----------------------------------------------------
-        // Labels inside the heart halves
+        // Labels
         // -----------------------------------------------------
 
         ctx.save();
@@ -1189,7 +1245,10 @@ if (this.rightFistAmount > 0.88) {
         ctx.textBaseline = "middle";
 
         ctx.font =
-            `italic ${Math.max(22, size * 0.20)}px cursive`;
+            `italic ${Math.max(
+                22,
+                size * 0.20
+            )}px cursive`;
 
         ctx.fillStyle =
             "rgba(255, 245, 252, 0.96)";
@@ -1200,9 +1259,10 @@ if (this.rightFistAmount > 0.88) {
             "rgba(255, 120, 200, 0.9)";
 
 
-        // When the halves are together, show a single "Us"
-        // instead of allowing "You" and "Me" to overlap.
-        if (progress > 0.96) {
+        if (
+            progress >
+            0.96
+        ) {
 
             ctx.fillText(
                 "Us",
@@ -1212,16 +1272,16 @@ if (this.rightFistAmount > 0.88) {
 
         } else {
 
-            // Visual LEFT half = "You"
-            // Because the canvas is mirrored, visual-left
-            // corresponds to positive canvas X.
+            // Visual LEFT half = You
+
             ctx.fillText(
                 "You",
                 separation,
                 -size * 0.02
             );
 
-            // Visual RIGHT half = "Me"
+            // Visual RIGHT half = Me
+
             ctx.fillText(
                 "Me",
                 -separation,
@@ -1339,50 +1399,37 @@ if (this.rightFistAmount > 0.88) {
 
         ctx.moveTo(
             0,
-            size *
-            0.72
+            size * 0.72
         );
 
 
         ctx.bezierCurveTo(
-            -size *
-            0.15,
-            size *
-            0.48,
+            -size * 0.15,
+            size * 0.48,
 
-            -size *
-            0.65,
-            size *
-            0.10,
+            -size * 0.65,
+            size * 0.10,
 
-            -size *
-            0.65,
-            -size *
-            0.20
+            -size * 0.65,
+            -size * 0.20
         );
 
 
         ctx.bezierCurveTo(
-            -size *
-            0.65,
-            -size *
-            0.58,
+            -size * 0.65,
+            -size * 0.58,
 
-            -size *
-            0.18,
-            -size *
-            0.70,
+            -size * 0.18,
+            -size * 0.70,
 
             0,
-            -size *
-            0.40
+            -size * 0.40
         );
 
 
         ctx.lineTo(
             0,
-            size *
-            0.72
+            size * 0.72
         );
 
 
@@ -1413,22 +1460,17 @@ if (this.rightFistAmount > 0.88) {
 
         const gradient =
             ctx.createRadialGradient(
-                cw *
-                0.5,
-                ch *
-                0.45,
+                cw * 0.5,
+                ch * 0.45,
                 0,
 
-                cw *
-                0.5,
-                ch *
-                0.45,
+                cw * 0.5,
+                ch * 0.45,
 
                 Math.max(
                     cw,
                     ch
-                ) *
-                0.75
+                ) * 0.75
             );
 
 
@@ -1469,21 +1511,17 @@ if (this.rightFistAmount > 0.88) {
 
 
         // Purple ambient glow
+
         const purple =
             ctx.createRadialGradient(
-                cw *
-                0.18,
-                ch *
-                0.25,
+                cw * 0.18,
+                ch * 0.25,
                 0,
 
-                cw *
-                0.18,
-                ch *
-                0.25,
+                cw * 0.18,
+                ch * 0.25,
 
-                cw *
-                0.6
+                cw * 0.6
             );
 
 
@@ -1588,16 +1626,15 @@ if (this.rightFistAmount > 0.88) {
 
             ctx.arc(
                 p.x *
-                this.canvas.width,
+                    this.canvas.width,
 
                 p.y *
-                this.canvas.height,
+                    this.canvas.height,
 
                 p.size,
 
                 0,
-                Math.PI *
-                2
+                Math.PI * 2
             );
 
 
@@ -1687,16 +1724,15 @@ if (this.rightFistAmount > 0.88) {
 
             ctx.arc(
                 p.x *
-                this.canvas.width,
+                    this.canvas.width,
 
                 p.y *
-                this.canvas.height,
+                    this.canvas.height,
 
                 p.size,
 
                 0,
-                Math.PI *
-                2
+                Math.PI * 2
             );
 
 
@@ -1804,6 +1840,7 @@ if (this.rightFistAmount > 0.88) {
 
 
         // Soft glow
+
         ctx.shadowBlur =
             18;
 
@@ -1812,15 +1849,14 @@ if (this.rightFistAmount > 0.88) {
 
 
         // Left wing
+
         const left =
             ctx.createRadialGradient(
-                -wing *
-                0.55,
+                -wing * 0.55,
                 0,
                 1,
 
-                -wing *
-                0.55,
+                -wing * 0.55,
                 0,
                 wing
             );
@@ -1850,17 +1886,13 @@ if (this.rightFistAmount > 0.88) {
 
 
         ctx.ellipse(
-            -wing *
-            0.55,
-            -wing *
-            0.1,
-            wing *
-            0.75,
+            -wing * 0.55,
+            -wing * 0.1,
+            wing * 0.75,
             wing,
             -0.4,
             0,
-            Math.PI *
-            2
+            Math.PI * 2
         );
 
 
@@ -1868,15 +1900,14 @@ if (this.rightFistAmount > 0.88) {
 
 
         // Right wing
+
         const right =
             ctx.createRadialGradient(
-                wing *
-                0.55,
+                wing * 0.55,
                 0,
                 1,
 
-                wing *
-                0.55,
+                wing * 0.55,
                 0,
                 wing
             );
@@ -1906,17 +1937,13 @@ if (this.rightFistAmount > 0.88) {
 
 
         ctx.ellipse(
-            wing *
-            0.55,
-            -wing *
-            0.1,
-            wing *
-            0.75,
+            wing * 0.55,
+            -wing * 0.1,
+            wing * 0.75,
             wing,
             0.4,
             0,
-            Math.PI *
-            2
+            Math.PI * 2
         );
 
 
@@ -1924,6 +1951,7 @@ if (this.rightFistAmount > 0.88) {
 
 
         // Body
+
         ctx.shadowBlur = 0;
 
         ctx.fillStyle =
@@ -1936,14 +1964,11 @@ if (this.rightFistAmount > 0.88) {
         ctx.ellipse(
             0,
             0,
-            b.size *
-            0.08,
-            b.size *
-            0.55,
+            b.size * 0.08,
+            b.size * 0.55,
             0,
             0,
-            Math.PI *
-            2
+            Math.PI * 2
         );
 
 
@@ -2027,13 +2052,11 @@ if (this.rightFistAmount > 0.88) {
             ctx.ellipse(
                 0,
                 0,
-                p.size *
-                0.55,
+                p.size * 0.55,
                 p.size,
                 0,
                 0,
-                Math.PI *
-                2
+                Math.PI * 2
             );
 
 
@@ -2049,71 +2072,121 @@ if (this.rightFistAmount > 0.88) {
     // GALLERY
     // =========================================================
 
-   enterGallery() {
-    this.state = "gallery";
+    enterGallery() {
 
-    // ALWAYS begin with Photo 1
-    this.currentPhoto = 0;
+        this.state =
+            "gallery";
 
-    this.photoTransition = 1;
-    this.photoTransitionDirection = 0;
 
-    // Reset swipe tracking so the hand movement
-    // that triggered the gallery does NOT count
-    // as an immediate swipe.
-    this.previousLeftX = null;
-    this.leftSwipeStartX = null;
+        // Always start with Photo 1
 
-    // Give the gallery a short settling period
-    this.leftSwipeCooldown = 45;
+        this.currentPhoto =
+            0;
 
-    if (this.status) {
-        this.status.textContent =
-            "Photo 1 / " + this.photoImages.length +
-            "  •  Swipe with your left hand ← →";
+
+        this.photoTransition =
+            1;
+
+        this.photoTransitionDirection =
+            0;
+
+
+        // Reset swipe tracking so the hand
+        // movement that triggered the gallery
+        // does not immediately skip Photo 1.
+
+        this.previousLeftX =
+            null;
+
+        this.leftSwipeStartX =
+            null;
+
+
+        // Short settling period
+
+        this.leftSwipeCooldown =
+            18;
+
+
+        if (this.status) {
+
+            this.status.textContent =
+                "Photo 1 / " +
+                this.photoImages.length +
+                "  •  Swipe with your left hand ← →";
+        }
     }
-}
+
 
     nextPhoto() {
-    if (
-        this.currentPhoto <
-        this.photoImages.length - 1
-    ) {
-        this.currentPhoto++;
 
-        this.photoTransition = 0;
-        this.photoTransitionDirection = -1;
+        if (
+            this.currentPhoto <
+            this.photoImages.length -
+            1
+        ) {
 
-        if (this.status) {
-            this.status.textContent =
-                "Photo " +
-                (this.currentPhoto + 1) +
-                " / " +
-                this.photoImages.length +
-                "  •  Swipe with your left hand ← →";
+            this.currentPhoto++;
+
+
+            this.photoTransition =
+                0;
+
+            this.photoTransitionDirection =
+                -1;
+
+
+            if (this.status) {
+
+                this.status.textContent =
+                    "Photo " +
+                    (
+                        this.currentPhoto +
+                        1
+                    ) +
+                    " / " +
+                    this.photoImages.length +
+                    "  •  Swipe with your left hand ← →";
+            }
+
+        } else {
+
+            this.finishGallery();
         }
-    } else {
-        this.finishGallery();
     }
-}
+
 
     previousPhoto() {
-    if (this.currentPhoto > 0) {
-        this.currentPhoto--;
 
-        this.photoTransition = 0;
-        this.photoTransitionDirection = 1;
+        if (
+            this.currentPhoto >
+            0
+        ) {
 
-        if (this.status) {
-            this.status.textContent =
-                "Photo " +
-                (this.currentPhoto + 1) +
-                " / " +
-                this.photoImages.length +
-                "  •  Swipe with your left hand ← →";
+            this.currentPhoto--;
+
+
+            this.photoTransition =
+                0;
+
+            this.photoTransitionDirection =
+                1;
+
+
+            if (this.status) {
+
+                this.status.textContent =
+                    "Photo " +
+                    (
+                        this.currentPhoto +
+                        1
+                    ) +
+                    " / " +
+                    this.photoImages.length +
+                    "  •  Swipe with your left hand ← →";
+            }
         }
     }
-}
 
 
     // =========================================================
@@ -2151,12 +2224,10 @@ if (this.rightFistAmount > 0.88) {
 
         const cardWidth =
             mobile
-                ? cw *
-                    0.76
+                ? cw * 0.76
                 : Math.min(
                     470,
-                    cw *
-                    0.46
+                    cw * 0.46
                 );
 
 
@@ -2180,6 +2251,7 @@ if (this.rightFistAmount > 0.88) {
 
 
         // Gentle floating motion
+
         const float =
             Math.sin(
                 this.time *
@@ -2191,12 +2263,46 @@ if (this.rightFistAmount > 0.88) {
         ctx.save();
 
 
-        ctx.translate(
+        // -----------------------------------------------------
+        // Smooth slide transition
+        // -----------------------------------------------------
+
+        const transitionProgress =
+            Math.min(
+                1,
+                this.photoTransition
+            );
+
+
+        const eased =
+            1 -
+            Math.pow(
+                1 -
+                transitionProgress,
+                3
+            );
+
+
+        const slideDistance =
             cw *
-            0.5,
+            0.18;
+
+
+        const slideOffset =
+            this.photoTransitionDirection *
+            slideDistance *
+            (
+                1 -
+                eased
+            );
+
+
+        ctx.translate(
+            cw * 0.5 +
+            slideOffset,
+
             y +
-            cardHeight *
-            0.5 +
+            cardHeight * 0.5 +
             float
         );
 
@@ -2235,10 +2341,8 @@ if (this.rightFistAmount > 0.88) {
 
 
         ctx.fillRect(
-            -cardWidth *
-            0.5,
-            -cardHeight *
-            0.5,
+            -cardWidth * 0.5,
+            -cardHeight * 0.5,
             cardWidth,
             cardHeight
         );
@@ -2292,9 +2396,11 @@ if (this.rightFistAmount > 0.88) {
 
 
         // Cover image area while preserving aspect ratio
+
         const imageRatio =
             img.width /
             img.height;
+
 
         const boxRatio =
             photoW /
@@ -2331,11 +2437,9 @@ if (this.rightFistAmount > 0.88) {
         ctx.drawImage(
             img,
 
-            -drawW *
-            0.5,
+            -drawW * 0.5,
 
-            -drawH *
-            0.5,
+            -drawH * 0.5,
 
             drawW,
             drawH
@@ -2469,15 +2573,16 @@ if (this.rightFistAmount > 0.88) {
 
 
         // Massive glow
+
         const glow =
             ctx.createRadialGradient(
                 0,
                 0,
                 0,
+
                 0,
                 0,
-                size *
-                2.4
+                size * 2.4
             );
 
 
@@ -2503,20 +2608,21 @@ if (this.rightFistAmount > 0.88) {
 
         ctx.beginPath();
 
+
         ctx.arc(
             0,
             0,
-            size *
-            2.4,
+            size * 2.4,
             0,
-            Math.PI *
-            2
+            Math.PI * 2
         );
+
 
         ctx.fill();
 
 
         // Heart path
+
         const gradient =
             ctx.createLinearGradient(
                 0,
@@ -2563,76 +2669,55 @@ if (this.rightFistAmount > 0.88) {
 
         ctx.moveTo(
             0,
-            size *
-            0.75
+            size * 0.75
         );
 
 
         ctx.bezierCurveTo(
-            -size *
-            0.75,
-            size *
-            0.20,
+            -size * 0.75,
+            size * 0.20,
 
-            -size *
-            0.82,
-            -size *
-            0.45,
+            -size * 0.82,
+            -size * 0.45,
 
-            -size *
-            0.40,
-            -size *
-            0.62
+            -size * 0.40,
+            -size * 0.62
         );
 
 
         ctx.bezierCurveTo(
-            -size *
-            0.18,
-            -size *
-            0.72,
+            -size * 0.18,
+            -size * 0.72,
 
             0,
-            -size *
-            0.50,
+            -size * 0.50,
 
             0,
-            -size *
-            0.30
+            -size * 0.30
         );
 
 
         ctx.bezierCurveTo(
             0,
-            -size *
-            0.50,
+            -size * 0.50,
 
-            size *
-            0.18,
-            -size *
-            0.72,
+            size * 0.18,
+            -size * 0.72,
 
-            size *
-            0.40,
-            -size *
-            0.62
+            size * 0.40,
+            -size * 0.62
         );
 
 
         ctx.bezierCurveTo(
-            size *
-            0.82,
-            -size *
-            0.45,
+            size * 0.82,
+            -size * 0.45,
 
-            size *
-            0.75,
-            size *
-            0.20,
+            size * 0.75,
+            size * 0.20,
 
             0,
-            size *
-            0.75
+            size * 0.75
         );
 
 
@@ -2684,18 +2769,15 @@ if (this.rightFistAmount > 0.88) {
                 23,
                 Math.min(
                     42,
-                    cw *
-                    0.055
+                    cw * 0.055
                 )
             )}px serif`;
 
 
         ctx.fillText(
             "Happy Birthday",
-            cw *
-            0.5,
-            ch *
-            0.70
+            cw * 0.5,
+            ch * 0.70
         );
 
 
@@ -2704,8 +2786,7 @@ if (this.rightFistAmount > 0.88) {
                 17,
                 Math.min(
                     29,
-                    cw *
-                    0.035
+                    cw * 0.035
                 )
             )}px serif`;
 
@@ -2721,8 +2802,7 @@ if (this.rightFistAmount > 0.88) {
 
                 ctx.fillText(
                     line,
-                    cw *
-                    0.5,
+                    cw * 0.5,
                     ch *
                     0.76 +
                     index *
@@ -2761,6 +2841,8 @@ if (this.rightFistAmount > 0.88) {
             dt;
 
 
+        // Swipe cooldown
+
         if (
             this.leftSwipeCooldown >
             0
@@ -2776,12 +2858,36 @@ if (this.rightFistAmount > 0.88) {
         // -----------------------------------------------------
 
         this.heartProgress +=
-    (
-        this.targetHeartProgress -
-        this.heartProgress
-    ) *
-    0.08 *
-    dt;
+            (
+                this.targetHeartProgress -
+                this.heartProgress
+            ) *
+            0.045 *
+            dt;
+
+
+        // -----------------------------------------------------
+        // Smooth photo transition
+        // -----------------------------------------------------
+
+        if (
+            this.photoTransition <
+            1
+        ) {
+
+            this.photoTransition +=
+                0.12 *
+                dt;
+
+            if (
+                this.photoTransition >
+                1
+            ) {
+
+                this.photoTransition =
+                    1;
+            }
+        }
 
 
         // -----------------------------------------------------
@@ -2790,7 +2896,9 @@ if (this.rightFistAmount > 0.88) {
 
         this.drawBackground();
 
-        this.updateBackgroundParticles(dt);
+        this.updateBackgroundParticles(
+            dt
+        );
 
 
         // =====================================================
@@ -2800,6 +2908,7 @@ if (this.rightFistAmount > 0.88) {
         if (
             this.state ===
                 "heart" ||
+
             this.state ===
                 "joining"
         ) {
@@ -2814,10 +2923,10 @@ if (this.rightFistAmount > 0.88) {
 
             this.drawHeart(
                 this.canvas.width *
-                0.5,
+                    0.5,
 
                 this.canvas.height *
-                0.46,
+                    0.46,
 
                 size,
 
