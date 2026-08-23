@@ -198,85 +198,87 @@ error
 
 initHandTracking() {
 
-const hands =
-new Hands({
-locateFile: (file) =>
-`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}`
-});
+    const hands =
+        new Hands({
+            locateFile: (file) =>
+                `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}`
+        });
 
-hands.setOptions({
+    hands.setOptions({
 
-maxNumHands: 2,
+        maxNumHands: 2,
 
-modelComplexity: 1,
+        modelComplexity: 1,
 
-minDetectionConfidence: 0.65,
+        minDetectionConfidence: 0.65,
 
-minTrackingConfidence: 0.5
+        minTrackingConfidence: 0.5
 
-});
+    });
 
-hands.onResults(
-(results) =>
-this.onHandResults(results)
-);
+    hands.onResults(
+        (results) =>
+            this.onHandResults(results)
+    );
 
-const camera =
-new Camera(
-this.video,
-{
 
-onFrame: async () => {
+    const camera =
+        new Camera(
+            this.video,
+            {
 
-await hands.send({
-image:
-this.video
-});
+                onFrame: async () => {
 
-},
+                    await hands.send({
+                        image:
+                            this.video
+                    });
 
-width: 1280,
+                },
 
-height: 720
+                width: 1280,
 
-}
-);
+                height: 720
 
-camera
-.start()
-.then(() => {
+            }
+        );
 
-setTimeout(
-() => {
 
-if (this.loading) {
+    camera
+        .start()
+        .then(() => {
 
-this.loading.classList.add(
-"hidden"
-);
+            setTimeout(
+                () => {
 
-}
+                    if (this.loading) {
 
-},
-900
-);
+                        this.loading.classList.add(
+                            "hidden"
+                        );
 
-})
-.catch((error) => {
+                    }
 
-console.error(
-"Camera error:",
-error
-);
+                },
+                900
+            );
 
-if (this.status) {
+        })
+        .catch((error) => {
 
-this.status.textContent =
-"Camera access is required ❤️";
+            console.error(
+                "Camera error:",
+                error
+            );
 
-}
+            if (this.status) {
 
-});
+                this.status.textContent =
+                    "Camera access is required ❤️";
+
+            }
+
+        });
 
 }
 
