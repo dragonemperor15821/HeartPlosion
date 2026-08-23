@@ -1,31 +1,202 @@
+/* ============================================================
+   HEARTPLOSION — Birthday Memory Experience
+   ============================================================
+
+   RIGHT HAND
+   ✊ Fist      → bring the two heart halves together
+   🖐️ Open     → explode the completed heart
+
+   LEFT HAND
+   👈 Swipe    → navigate through the Polaroid memories
+
+   EXPERIENCE
+   ────────────────────────────────────────────────────────────
+   Two heart halves
+        ↓
+   Right fist
+        ↓
+   Whole glowing heart
+        ↓
+   Right hand opens
+        ↓
+   Heart explosion
+        ↓
+   Butterflies + flower petals
+        ↓
+   Vintage Polaroid memories
+        ↓
+   Left-hand swiping
+        ↓
+   Giant glowing heart
+        ↓
+   Happy Birthday My Wifey...
+   ============================================================ */
+
+
 class HeartPlosion {
+
     constructor() {
+
+        // =====================================================
+        // DOM
+        // =====================================================
+
         this.canvas = document.getElementById("canvas");
         this.ctx = this.canvas.getContext("2d");
+
         this.video = document.getElementById("webcam");
+
         this.loading = document.getElementById("loading");
         this.instructions = document.getElementById("instructions");
         this.status = document.getElementById("status");
 
-        this.birthdaySong =
-            document.getElementById("birthdaySong");
+
+        // =====================================================
+        // BACKGROUND MUSIC
+        // =====================================================
+
+        // Music starts when the heart explodes.
+        // The first user interaction unlocks audio for browsers
+        // that block autoplay until the user interacts.
+
+        this.music = new Audio(
+            "audio/new_west_-_those_eyes_sped_up_(mp3.pm).mp3"
+        );
+
+        this.music.loop = true;
+        this.music.preload = "auto";
+        this.music.volume = 0.65;
 
         this.musicStarted = false;
+        this.musicUnlocked = false;
 
-        if (this.birthdaySong) {
-            this.birthdaySong.loop = true;
-            this.birthdaySong.preload = "auto";
 
-            this.birthdaySong.addEventListener(
-                "ended",
-                () => {
-                    if (this.musicStarted) {
-                        this.birthdaySong.currentTime = 0;
-                        this.birthdaySong.play().catch(() => {});
-                    }
-                }
-            );
-        }
+        // -----------------------------------------------------
+        // Unlock audio on first user interaction
+        // -----------------------------------------------------
+
+        this.unlockMusic = () => {
+
+            if (this.musicUnlocked) {
+                return;
+            }
+
+            const originalVolume =
+                this.music.volume;
+
+            // Play silently for a moment so the browser
+            // considers the audio element unlocked.
+
+            this.music.volume = 0;
+
+            const unlockPromise =
+                this.music.play();
+
+            if (
+                unlockPromise &&
+                typeof unlockPromise.then === "function"
+            ) {
+
+                unlockPromise
+                    .then(() => {
+
+                        this.music.pause();
+
+                        this.music.currentTime = 0;
+
+                        this.music.volume =
+                            originalVolume;
+
+                        this.musicUnlocked = true;
+
+                    })
+                    .catch(() => {
+
+                        this.music.volume =
+                            originalVolume;
+
+                    });
+
+            } else {
+
+                this.music.pause();
+
+                this.music.currentTime = 0;
+
+                this.music.volume =
+                    originalVolume;
+
+                this.musicUnlocked = true;
+            }
+        };
+
+
+        // -----------------------------------------------------
+        // Start music
+        // -----------------------------------------------------
+
+        this.startMusic = () => {
+
+            // Prevent the music from restarting
+            // if explodeHeart() somehow fires twice.
+
+            if (this.musicStarted) {
+                return;
+            }
+
+            this.musicStarted = true;
+
+            this.music.currentTime = 0;
+
+            this.music.volume = 0.65;
+
+            const playPromise =
+                this.music.play();
+
+            if (
+                playPromise &&
+                typeof playPromise.catch === "function"
+            ) {
+
+                playPromise.catch((error) => {
+
+                    console.warn(
+                        "Music autoplay was blocked:",
+                        error
+                    );
+
+                    this.musicStarted = false;
+                });
+            }
+        };
+
+
+        // -----------------------------------------------------
+        // Browser audio unlock
+        // -----------------------------------------------------
+
+        window.addEventListener(
+            "pointerdown",
+            this.unlockMusic,
+            {
+                once: true,
+                passive: true
+            }
+        );
+
+        window.addEventListener(
+            "keydown",
+            this.unlockMusic,
+            {
+                once: true,
+                passive: true
+            }
+        );
+
+
+        // =====================================================
+        // CANVAS
+        // =====================================================
 
         this.resize();
 
@@ -34,16 +205,49 @@ class HeartPlosion {
             () => this.resize()
         );
 
+
+        // =====================================================
+        // TIME
+        // =====================================================
+
         this.time = 0;
         this.lastTimestamp = 0;
 
+
+        // =====================================================
+        // EXPERIENCE STATE
+        // =====================================================
+
         this.state = "heart";
+
+        /*
+            heart
+            joining
+            complete
+            exploding
+            reveal
+            gallery
+            ending
+        */
+
+
+        // =====================================================
+        // HEART
+        // =====================================================
 
         this.heartProgress = 0;
         this.targetHeartProgress = 0;
+
         this.heartJoined = false;
+
         this.explosionTriggered = false;
+
         this.explosionTimer = 0;
+
+
+        // =====================================================
+        // HAND STATE
+        // =====================================================
 
         this.handLandmarks = [];
         this.handHandedness = [];
@@ -54,27 +258,27 @@ class HeartPlosion {
         this.rightFistAmount = 0;
         this.rightOpenAmount = 0;
 
-        /* =====================================================
-           LEFT HAND SWIPE SYSTEM
-        ===================================================== */
+        this.previousRightOpen = 0;
+
+
+        // =====================================================
+        // LEFT HAND SWIPE TRACKING
+        // =====================================================
 
         this.previousLeftX = null;
         this.leftSwipeStartX = null;
+        this.leftSwipeCooldown = 0;
 
-        // One swipe = one photo.
-        this.swipeLocked = false;
+        // Lower threshold = faster response
+        this.swipeThreshold = 0.075;
 
-        // Higher = less sensitive.
-        this.swipeThreshold = 0.10;
-
-        // Hand must return close to neutral before
-        // another swipe can happen.
-        this.swipeResetThreshold = 0.055;
+        // Minimum movement between frames
+        this.swipeVelocityThreshold = 0.012;
 
 
-        /* =====================================================
-           PHOTOS
-        ===================================================== */
+        // =====================================================
+        // GALLERY
+        // =====================================================
 
         this.photos = [
             "photos/photo01.png",
@@ -95,23 +299,46 @@ class HeartPlosion {
         ];
 
         this.photoImages = [];
+
         this.currentPhoto = 0;
-        this.photoTransition = 0;
+
+        this.photoTransition = 1;
+
         this.photoTransitionDirection = 0;
+
         this.galleryReady = false;
 
 
-        /* =====================================================
-           PARTICLES
-        ===================================================== */
+        // =====================================================
+        // PARTICLES
+        // =====================================================
 
         this.particles = [];
+
         this.butterflies = [];
+
         this.petals = [];
 
         this.initBackgroundParticles();
+
+
+        // =====================================================
+        // LOAD PHOTOS
+        // =====================================================
+
         this.loadPhotos();
+
+
+        // =====================================================
+        // HAND TRACKING
+        // =====================================================
+
         this.initHandTracking();
+
+
+        // =====================================================
+        // ANIMATION
+        // =====================================================
 
         requestAnimationFrame(
             (timestamp) =>
@@ -120,49 +347,23 @@ class HeartPlosion {
     }
 
 
-    /* =========================================================
-       RESIZE
-    ========================================================= */
+    // =========================================================
+    // RESIZE
+    // =========================================================
 
     resize() {
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
+
+        this.canvas.width =
+            window.innerWidth;
+
+        this.canvas.height =
+            window.innerHeight;
     }
 
 
-    /* =========================================================
-       MUSIC
-    ========================================================= */
-
-    startMusic() {
-
-        if (
-            this.musicStarted ||
-            !this.birthdaySong
-        ) {
-            return;
-        }
-
-        this.birthdaySong.volume = 0.7;
-        this.birthdaySong.loop = true;
-
-        this.birthdaySong
-            .play()
-            .then(() => {
-                this.musicStarted = true;
-            })
-            .catch((error) => {
-                console.log(
-                    "Music waiting for user interaction:",
-                    error
-                );
-            });
-    }
-
-
-    /* =========================================================
-       BACKGROUND PARTICLES
-    ========================================================= */
+    // =========================================================
+    // BACKGROUND PARTICLES
+    // =========================================================
 
     initBackgroundParticles() {
 
@@ -170,8 +371,11 @@ class HeartPlosion {
 
             this.particles.push({
 
-                x: Math.random(),
-                y: Math.random(),
+                x:
+                    Math.random(),
+
+                y:
+                    Math.random(),
 
                 size:
                     Math.random() * 2.2 + 0.4,
@@ -192,9 +396,9 @@ class HeartPlosion {
     }
 
 
-    /* =========================================================
-       PHOTO LOADING
-    ========================================================= */
+    // =========================================================
+    // PHOTO LOADING
+    // =========================================================
 
     loadPhotos() {
 
@@ -203,11 +407,13 @@ class HeartPlosion {
         this.photoImages =
             new Array(this.photos.length);
 
+
         this.photos.forEach(
             (src, index) => {
 
                 const img =
                     new Image();
+
 
                 img.onload = () => {
 
@@ -215,6 +421,7 @@ class HeartPlosion {
                         img;
 
                     loaded++;
+
 
                     if (
                         loaded ===
@@ -226,6 +433,7 @@ class HeartPlosion {
                     }
                 };
 
+
                 img.onerror = () => {
 
                     console.warn(
@@ -234,21 +442,22 @@ class HeartPlosion {
                     );
                 };
 
+
                 img.src = src;
             }
         );
     }
 
 
-    /* =========================================================
-       MEDIAPIPE / CAMERA
-       KEEPING THE WORKING CAMERA CODE
-    ========================================================= */
+    // =========================================================
+    // MEDIAPIPE
+    // =========================================================
 
     initHandTracking() {
 
         const hands =
             new Hands({
+
                 locateFile: (file) =>
                     `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}`
             });
@@ -258,7 +467,8 @@ class HeartPlosion {
 
             maxNumHands: 2,
 
-            modelComplexity: 1,
+            // Lower complexity = much smoother tracking
+            modelComplexity: 0,
 
             minDetectionConfidence: 0.65,
 
@@ -283,12 +493,15 @@ class HeartPlosion {
                             image:
                                 this.video
                         });
-
                     },
 
-                    width: 1280,
 
-                    height: 720
+                    // Lower camera resolution
+                    // reduces tracking lag
+
+                    width: 640,
+
+                    height: 480
                 }
             );
 
@@ -319,6 +532,7 @@ class HeartPlosion {
                     error
                 );
 
+
                 if (this.status) {
 
                     this.status.textContent =
@@ -328,9 +542,9 @@ class HeartPlosion {
     }
 
 
-    /* =========================================================
-       HAND RESULTS
-    ========================================================= */
+    // =========================================================
+    // HAND RESULTS
+    // =========================================================
 
     onHandResults(results) {
 
@@ -344,11 +558,6 @@ class HeartPlosion {
         this.rightHand = null;
         this.leftHand = null;
 
-
-        /* =====================================================
-           HAND IDENTIFICATION
-           THIS IS THE WORKING MAPPING
-        ===================================================== */
 
         for (
             let i = 0;
@@ -368,29 +577,32 @@ class HeartPlosion {
                 handedness.label === "Left"
             ) {
 
-                this.rightHand =
-                    hand;
+                // MediaPipe's label is reversed because
+                // our camera input is not mirrored for detection.
+                // "Left" here corresponds to user's physical RIGHT hand.
+
+                this.rightHand = hand;
 
             } else {
 
-                this.leftHand =
-                    hand;
+                // "Right" corresponds to user's physical LEFT hand.
+
+                this.leftHand = hand;
             }
         }
 
 
-        /* =====================================================
-           RIGHT HAND
-        ===================================================== */
+        // =====================================================
+        // RIGHT HAND
+        // =====================================================
 
         if (this.rightHand) {
-
-            this.startMusic();
 
             this.rightFistAmount =
                 this.calculateFistAmount(
                     this.rightHand
                 );
+
 
             this.rightOpenAmount =
                 this.calculateOpenAmount(
@@ -398,22 +610,38 @@ class HeartPlosion {
                 );
 
 
-            /* =================================================
-               HEART
-            ================================================= */
+            // -------------------------------------------------
+            // HEART STAGE
+            // -------------------------------------------------
 
             if (
                 this.state === "heart" ||
                 this.state === "joining"
             ) {
 
+                /*
+                    More gradual fist response.
+
+                    0.42 = movement starts
+                    0.88 = proper closed fist
+                */
+
                 this.targetHeartProgress =
-                    this.rightFistAmount;
+                    Math.max(
+                        0,
+                        Math.min(
+                            1,
+                            (
+                                this.rightFistAmount -
+                                0.42
+                            ) / 0.50
+                        )
+                    );
 
 
                 if (
                     this.rightFistAmount >
-                    0.82
+                    0.88
                 ) {
 
                     this.state =
@@ -434,7 +662,7 @@ class HeartPlosion {
 
                 } else if (
                     this.rightFistAmount >
-                    0.25
+                    0.42
                 ) {
 
                     this.state =
@@ -462,30 +690,37 @@ class HeartPlosion {
             }
 
 
-            /* =================================================
-               EXPLOSION
-            ================================================= */
+            // -------------------------------------------------
+            // EXPLOSION
+            // -------------------------------------------------
 
             if (
                 this.heartJoined &&
                 !this.explosionTriggered &&
                 this.rightOpenAmount >
-                0.60
+                0.55
             ) {
 
                 this.explodeHeart();
             }
 
+
+            this.previousRightOpen =
+                this.rightOpenAmount;
+
         } else {
 
             this.rightFistAmount *= 0.9;
+
             this.rightOpenAmount *= 0.9;
+
+            this.previousRightOpen *= 0.9;
         }
 
 
-        /* =====================================================
-           LEFT HAND SWIPING
-        ===================================================== */
+        // =====================================================
+        // LEFT HAND / SMOOTH SWIPES
+        // =====================================================
 
         if (this.leftHand) {
 
@@ -508,86 +743,85 @@ class HeartPlosion {
 
                 this.leftSwipeStartX =
                     x;
-            }
+
+            } else {
+
+                const movement =
+                    x -
+                    this.previousLeftX;
 
 
-            this.previousLeftX =
-                x;
+                this.previousLeftX =
+                    x;
 
 
-            if (
-                this.state ===
-                "gallery"
-            ) {
-
-
-                /* =============================================
-                   WAIT UNTIL HAND RETURNS
-                ============================================= */
+                // -------------------------------------------------
+                // Gallery swipe detection
+                // -------------------------------------------------
 
                 if (
-                    this.swipeLocked
+                    this.state ===
+                    "gallery"
                 ) {
 
                     if (
-                        Math.abs(
-                            x -
-                            this.leftSwipeStartX
-                        ) <=
-                        this.swipeResetThreshold
+                        this.leftSwipeCooldown >
+                        0
                     ) {
 
-                        this.swipeLocked =
-                            false;
-
-                        this.leftSwipeStartX =
-                            x;
+                        return;
                     }
 
-
-                } else {
-
-
-                    /* =========================================
-                       DETECT ONE COMPLETE SWIPE
-                    ========================================= */
 
                     const totalSwipe =
                         x -
                         this.leftSwipeStartX;
 
 
+                    /*
+                        Require BOTH:
+                        1. enough total movement
+                        2. enough movement between frames
+
+                        This makes swipes responsive
+                        without triggering from tiny movement.
+                    */
+
                     if (
-                        Math.abs(
-                            totalSwipe
-                        ) >=
-                        this.swipeThreshold
+                        Math.abs(totalSwipe) >
+                        this.swipeThreshold &&
+                        Math.abs(movement) >
+                        this.swipeVelocityThreshold
                     ) {
 
+                        /*
+                            Moving hand left
+                            = next photo
+
+                            Moving hand right
+                            = previous photo
+                        */
 
                         if (
                             totalSwipe < 0
                         ) {
 
-                            // Swipe LEFT
                             this.nextPhoto();
 
                         } else {
 
-                            // Swipe RIGHT
                             this.previousPhoto();
                         }
 
 
-                        // Lock immediately.
-                        // This prevents one long movement
-                        // from skipping several photos.
-
-                        this.swipeLocked =
-                            true;
+                        // Reset immediately
+                        // for next swipe
 
                         this.leftSwipeStartX =
                             x;
+
+                        this.leftSwipeCooldown =
+                            8;
                     }
                 }
             }
@@ -599,29 +833,27 @@ class HeartPlosion {
 
             this.leftSwipeStartX =
                 null;
-
-            this.swipeLocked =
-                false;
         }
     }
 
 
-    /* =========================================================
-       FIST DETECTION
-    ========================================================= */
+    // =========================================================
+    // FIST DETECTION
+    // =========================================================
 
     calculateFistAmount(lm) {
 
         const wrist =
             lm[0];
 
+
         const palmSize =
             Math.hypot(
                 lm[9].x -
-                wrist.x,
+                    wrist.x,
 
                 lm[9].y -
-                wrist.y
+                    wrist.y
             );
 
 
@@ -629,15 +861,21 @@ class HeartPlosion {
             palmSize <
             0.01
         ) {
+
             return 0;
         }
 
 
         const fingertips = [
+
             lm[8],
+
             lm[12],
+
             lm[16],
+
             lm[20]
+
         ];
 
 
@@ -652,10 +890,10 @@ class HeartPlosion {
             const distance =
                 Math.hypot(
                     tip.x -
-                    wrist.x,
+                        wrist.x,
 
                     tip.y -
-                    wrist.y
+                        wrist.y
                 );
 
 
@@ -676,6 +914,7 @@ class HeartPlosion {
             amount =
                 Math.max(
                     0,
+
                     Math.min(
                         1,
                         amount
@@ -692,22 +931,23 @@ class HeartPlosion {
     }
 
 
-    /* =========================================================
-       OPEN HAND DETECTION
-    ========================================================= */
+    // =========================================================
+    // OPEN HAND
+    // =========================================================
 
     calculateOpenAmount(lm) {
 
         const wrist =
             lm[0];
 
+
         const palmSize =
             Math.hypot(
                 lm[9].x -
-                wrist.x,
+                    wrist.x,
 
                 lm[9].y -
-                wrist.y
+                    wrist.y
             );
 
 
@@ -715,15 +955,21 @@ class HeartPlosion {
             palmSize <
             0.01
         ) {
+
             return 0;
         }
 
 
         const fingertips = [
+
             lm[8],
+
             lm[12],
+
             lm[16],
+
             lm[20]
+
         ];
 
 
@@ -738,10 +984,10 @@ class HeartPlosion {
             const distance =
                 Math.hypot(
                     tip.x -
-                    wrist.x,
+                        wrist.x,
 
                     tip.y -
-                    wrist.y
+                        wrist.y
                 );
 
 
@@ -761,6 +1007,7 @@ class HeartPlosion {
             amount =
                 Math.max(
                     0,
+
                     Math.min(
                         1,
                         amount
@@ -777,9 +1024,9 @@ class HeartPlosion {
     }
 
 
-    /* =========================================================
-       PALM CENTER
-    ========================================================= */
+    // =========================================================
+    // PALM CENTER
+    // =========================================================
 
     palmCenter(lm) {
 
@@ -822,17 +1069,29 @@ class HeartPlosion {
     }
 
 
-    /* =========================================================
-       HEART EXPLOSION
-    ========================================================= */
+    // =========================================================
+    // HEART EXPLOSION
+    // =========================================================
 
     explodeHeart() {
 
         this.explosionTriggered =
             true;
 
+
+        // =====================================================
+        // START BIRTHDAY MUSIC
+        // =====================================================
+
+        // The song begins at the exact moment
+        // the completed heart explodes.
+
+        this.startMusic();
+
+
         this.state =
             "exploding";
+
 
         this.explosionTimer =
             0;
@@ -845,9 +1104,9 @@ class HeartPlosion {
         }
 
 
-        /* =====================================================
-           EXPLOSION PARTICLES
-        ===================================================== */
+        // -----------------------------------------------------
+        // Light burst
+        // -----------------------------------------------------
 
         for (
             let i = 0;
@@ -859,6 +1118,7 @@ class HeartPlosion {
                 Math.random() *
                 Math.PI *
                 2;
+
 
             const speed =
                 Math.random() *
@@ -898,9 +1158,9 @@ class HeartPlosion {
         }
 
 
-        /* =====================================================
-           BUTTERFLIES
-        ===================================================== */
+        // -----------------------------------------------------
+        // Butterflies
+        // -----------------------------------------------------
 
         for (
             let i = 0;
@@ -960,9 +1220,9 @@ class HeartPlosion {
         }
 
 
-        /* =====================================================
-           PETALS
-        ===================================================== */
+        // -----------------------------------------------------
+        // Flower petals
+        // -----------------------------------------------------
 
         for (
             let i = 0;
@@ -974,6 +1234,7 @@ class HeartPlosion {
                 Math.random() *
                 Math.PI *
                 2;
+
 
             const speed =
                 Math.random() *
@@ -1022,9 +1283,9 @@ class HeartPlosion {
     }
 
 
-    /* =========================================================
-       HEART
-    ========================================================= */
+    // =========================================================
+    // HEART DRAWING
+    // =========================================================
 
     drawHeart(
         cx,
@@ -1048,31 +1309,32 @@ class HeartPlosion {
 
         ctx.save();
 
-
         ctx.translate(
             cx,
             cy
         );
 
 
+        // -----------------------------------------------------
+        // Ambient glow
+        // -----------------------------------------------------
+
         const glow =
             ctx.createRadialGradient(
+                0,
+                0,
+                size * 0.1,
 
                 0,
                 0,
-                size *
-                0.1,
-
-                0,
-                0,
-                size *
-                1.6
+                size * 1.6
             );
 
 
         glow.addColorStop(
             0,
-            `rgba(255,90,160,${
+
+            `rgba(255, 90, 160, ${
                 0.18 +
                 progress *
                 0.25
@@ -1082,7 +1344,8 @@ class HeartPlosion {
 
         glow.addColorStop(
             0.5,
-            `rgba(170,70,255,${
+
+            `rgba(170, 70, 255, ${
                 0.10 +
                 progress *
                 0.12
@@ -1092,7 +1355,8 @@ class HeartPlosion {
 
         glow.addColorStop(
             1,
-            "rgba(100,0,150,0)"
+
+            "rgba(100, 0, 150, 0)"
         );
 
 
@@ -1102,18 +1366,22 @@ class HeartPlosion {
 
         ctx.beginPath();
 
+
         ctx.arc(
             0,
             0,
-            size *
-            1.6,
+            size * 1.6,
             0,
-            Math.PI *
-            2
+            Math.PI * 2
         );
+
 
         ctx.fill();
 
+
+        // -----------------------------------------------------
+        // Heart halves
+        // -----------------------------------------------------
 
         this.drawHeartHalf(
             ctx,
@@ -1133,34 +1401,28 @@ class HeartPlosion {
         );
 
 
+        // -----------------------------------------------------
+        // Labels
+        // -----------------------------------------------------
+
         ctx.save();
 
-        ctx.scale(
-            -1,
-            1
-        );
-
-        ctx.textAlign =
-            "center";
-
-        ctx.textBaseline =
-            "middle";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
 
         ctx.font =
             `italic ${Math.max(
                 22,
-                size *
-                0.20
+                size * 0.20
             )}px cursive`;
 
         ctx.fillStyle =
-            "rgba(255,245,252,0.96)";
+            "rgba(255, 245, 252, 0.96)";
 
-        ctx.shadowBlur =
-            18;
+        ctx.shadowBlur = 18;
 
         ctx.shadowColor =
-            "rgba(255,120,200,0.9)";
+            "rgba(255, 120, 200, 0.9)";
 
 
         if (
@@ -1171,30 +1433,36 @@ class HeartPlosion {
             ctx.fillText(
                 "Us",
                 0,
-                -size *
-                0.02
+                -size * 0.02
             );
 
         } else {
 
+            // Visual LEFT half = You
+
             ctx.fillText(
                 "You",
                 separation,
-                -size *
-                0.02
+                -size * 0.02
             );
+
+
+            // Visual RIGHT half = Me
 
             ctx.fillText(
                 "Me",
                 -separation,
-                -size *
-                0.02
+                -size * 0.02
             );
         }
 
 
         ctx.restore();
 
+
+        // -----------------------------------------------------
+        // Complete heart pulse
+        // -----------------------------------------------------
 
         if (
             progress >
@@ -1221,9 +1489,9 @@ class HeartPlosion {
     }
 
 
-    /* =========================================================
-       HEART HALF
-    ========================================================= */
+    // =========================================================
+    // HEART HALF
+    // =========================================================
 
     drawHeartHalf(
         ctx,
@@ -1234,6 +1502,7 @@ class HeartPlosion {
     ) {
 
         ctx.save();
+
 
         ctx.translate(
             offsetX,
@@ -1283,11 +1552,13 @@ class HeartPlosion {
         ctx.fillStyle =
             gradient;
 
+
         ctx.shadowBlur =
             35;
 
+
         ctx.shadowColor =
-            "rgba(255,45,130,0.75)";
+            "rgba(255, 45, 130, 0.75)";
 
 
         ctx.beginPath();
@@ -1295,50 +1566,37 @@ class HeartPlosion {
 
         ctx.moveTo(
             0,
-            size *
-            0.72
+            size * 0.72
         );
 
 
         ctx.bezierCurveTo(
-            -size *
-            0.15,
-            size *
-            0.48,
+            -size * 0.15,
+            size * 0.48,
 
-            -size *
-            0.65,
-            size *
-            0.10,
+            -size * 0.65,
+            size * 0.10,
 
-            -size *
-            0.65,
-            -size *
-            0.20
+            -size * 0.65,
+            -size * 0.20
         );
 
 
         ctx.bezierCurveTo(
-            -size *
-            0.65,
-            -size *
-            0.58,
+            -size * 0.65,
+            -size * 0.58,
 
-            -size *
-            0.18,
-            -size *
-            0.70,
+            -size * 0.18,
+            -size * 0.70,
 
             0,
-            -size *
-            0.40
+            -size * 0.40
         );
 
 
         ctx.lineTo(
             0,
-            size *
-            0.72
+            size * 0.72
         );
 
 
@@ -1346,13 +1604,14 @@ class HeartPlosion {
 
         ctx.fill();
 
+
         ctx.restore();
     }
 
 
-    /* =========================================================
-       BACKGROUND
-    ========================================================= */
+    // =========================================================
+    // BACKGROUND
+    // =========================================================
 
     drawBackground() {
 
@@ -1368,26 +1627,17 @@ class HeartPlosion {
 
         const gradient =
             ctx.createRadialGradient(
-
-                cw *
-                0.5,
-
-                ch *
-                0.45,
-
+                cw * 0.5,
+                ch * 0.45,
                 0,
 
-                cw *
-                0.5,
-
-                ch *
-                0.45,
+                cw * 0.5,
+                ch * 0.45,
 
                 Math.max(
                     cw,
                     ch
-                ) *
-                0.75
+                ) * 0.75
             );
 
 
@@ -1396,15 +1646,18 @@ class HeartPlosion {
             "#281020"
         );
 
+
         gradient.addColorStop(
             0.38,
             "#150814"
         );
 
+
         gradient.addColorStop(
             0.72,
             "#09030b"
         );
+
 
         gradient.addColorStop(
             1,
@@ -1424,36 +1677,30 @@ class HeartPlosion {
         );
 
 
+        // Purple ambient glow
+
         const purple =
             ctx.createRadialGradient(
-
-                cw *
-                0.18,
-
-                ch *
-                0.25,
-
+                cw * 0.18,
+                ch * 0.25,
                 0,
 
-                cw *
-                0.18,
+                cw * 0.18,
+                ch * 0.25,
 
-                ch *
-                0.25,
-
-                cw *
-                0.6
+                cw * 0.6
             );
 
 
         purple.addColorStop(
             0,
-            "rgba(150,50,255,0.10)"
+            "rgba(150, 50, 255, 0.10)"
         );
+
 
         purple.addColorStop(
             1,
-            "rgba(150,50,255,0)"
+            "rgba(150, 50, 255, 0)"
         );
 
 
@@ -1470,9 +1717,9 @@ class HeartPlosion {
     }
 
 
-    /* =========================================================
-       BACKGROUND PARTICLES
-    ========================================================= */
+    // =========================================================
+    // BACKGROUND PARTICLES
+    // =========================================================
 
     updateBackgroundParticles(dt) {
 
@@ -1488,6 +1735,7 @@ class HeartPlosion {
             if (
                 p.explosion
             ) {
+
                 continue;
             }
 
@@ -1522,15 +1770,19 @@ class HeartPlosion {
 
             ctx.save();
 
+
             ctx.globalAlpha =
                 p.alpha *
                 flicker;
 
+
             ctx.fillStyle =
                 "#ff91bd";
 
+
             ctx.shadowBlur =
                 10;
+
 
             ctx.shadowColor =
                 "#ff3d8c";
@@ -1538,19 +1790,20 @@ class HeartPlosion {
 
             ctx.beginPath();
 
+
             ctx.arc(
                 p.x *
-                this.canvas.width,
+                    this.canvas.width,
 
                 p.y *
-                this.canvas.height,
+                    this.canvas.height,
 
                 p.size,
 
                 0,
-                Math.PI *
-                2
+                Math.PI * 2
             );
+
 
             ctx.fill();
 
@@ -1559,9 +1812,9 @@ class HeartPlosion {
     }
 
 
-    /* =========================================================
-       EXPLOSION PARTICLES
-    ========================================================= */
+    // =========================================================
+    // EXPLOSION PARTICLES
+    // =========================================================
 
     updateExplosionParticles(dt) {
 
@@ -1577,6 +1830,7 @@ class HeartPlosion {
             if (
                 !p.explosion
             ) {
+
                 continue;
             }
 
@@ -1605,14 +1859,17 @@ class HeartPlosion {
             p.vy *=
                 0.975;
 
+
             p.alpha *=
                 0.972;
 
 
             ctx.save();
 
+
             ctx.globalAlpha =
                 p.alpha;
+
 
             ctx.fillStyle =
                 Math.random() >
@@ -1620,8 +1877,10 @@ class HeartPlosion {
                     ? "#ff6ba5"
                     : "#c77dff";
 
+
             ctx.shadowBlur =
                 18;
+
 
             ctx.shadowColor =
                 "#ff4f9a";
@@ -1629,32 +1888,38 @@ class HeartPlosion {
 
             ctx.beginPath();
 
+
             ctx.arc(
                 p.x *
-                this.canvas.width,
+                    this.canvas.width,
 
                 p.y *
-                this.canvas.height,
+                    this.canvas.height,
 
                 p.size,
 
                 0,
-                Math.PI *
-                2
+                Math.PI * 2
             );
 
+
             ctx.fill();
+
 
             ctx.restore();
         }
     }
 
 
-    /* =========================================================
-       BUTTERFLIES
-    ========================================================= */
+    // =========================================================
+    // BUTTERFLIES
+    // =========================================================
 
     updateButterflies(dt) {
+
+        const ctx =
+            this.ctx;
+
 
         for (
             const b
@@ -1694,6 +1959,10 @@ class HeartPlosion {
     }
 
 
+    // =========================================================
+    // BUTTERFLY DRAWING
+    // =========================================================
+
     drawButterfly(b) {
 
         const ctx =
@@ -1702,14 +1971,17 @@ class HeartPlosion {
 
         ctx.save();
 
+
         ctx.translate(
             b.x,
             b.y
         );
 
+
         ctx.rotate(
             b.rotation
         );
+
 
         ctx.globalAlpha =
             b.alpha;
@@ -1734,22 +2006,24 @@ class HeartPlosion {
             );
 
 
+        // Soft glow
+
         ctx.shadowBlur =
             18;
 
         ctx.shadowColor =
-            "rgba(255,150,220,0.7)";
+            "rgba(255, 150, 220, 0.7)";
 
+
+        // Left wing
 
         const left =
             ctx.createRadialGradient(
-                -wing *
-                0.55,
+                -wing * 0.55,
                 0,
                 1,
 
-                -wing *
-                0.55,
+                -wing * 0.55,
                 0,
                 wing
             );
@@ -1767,7 +2041,7 @@ class HeartPlosion {
 
         left.addColorStop(
             1,
-            "rgba(177,66,255,0.15)"
+            "rgba(177, 66, 255, 0.15)"
         );
 
 
@@ -1777,38 +2051,30 @@ class HeartPlosion {
 
         ctx.beginPath();
 
+
         ctx.ellipse(
-            -wing *
-            0.55,
-
-            -wing *
-            0.1,
-
-            wing *
-            0.75,
-
+            -wing * 0.55,
+            -wing * 0.1,
+            wing * 0.75,
             wing,
-
             -0.4,
-
             0,
-
-            Math.PI *
-            2
+            Math.PI * 2
         );
+
 
         ctx.fill();
 
 
+        // Right wing
+
         const right =
             ctx.createRadialGradient(
-                wing *
-                0.55,
+                wing * 0.55,
                 0,
                 1,
 
-                wing *
-                0.55,
+                wing * 0.55,
                 0,
                 wing
             );
@@ -1826,7 +2092,7 @@ class HeartPlosion {
 
         right.addColorStop(
             1,
-            "rgba(255,70,160,0.15)"
+            "rgba(255, 70, 160, 0.15)"
         );
 
 
@@ -1836,31 +2102,24 @@ class HeartPlosion {
 
         ctx.beginPath();
 
+
         ctx.ellipse(
-            wing *
-            0.55,
-
-            -wing *
-            0.1,
-
-            wing *
-            0.75,
-
+            wing * 0.55,
+            -wing * 0.1,
+            wing * 0.75,
             wing,
-
             0.4,
-
             0,
-
-            Math.PI *
-            2
+            Math.PI * 2
         );
+
 
         ctx.fill();
 
 
-        ctx.shadowBlur =
-            0;
+        // Body
+
+        ctx.shadowBlur = 0;
 
         ctx.fillStyle =
             "#3b1730";
@@ -1868,33 +2127,28 @@ class HeartPlosion {
 
         ctx.beginPath();
 
+
         ctx.ellipse(
             0,
             0,
-
-            b.size *
-            0.08,
-
-            b.size *
-            0.55,
-
+            b.size * 0.08,
+            b.size * 0.55,
             0,
-
             0,
-
-            Math.PI *
-            2
+            Math.PI * 2
         );
 
+
         ctx.fill();
+
 
         ctx.restore();
     }
 
 
-    /* =========================================================
-       PETALS
-    ========================================================= */
+    // =========================================================
+    // FLOWER PETALS
+    // =========================================================
 
     updatePetals(dt) {
 
@@ -1915,12 +2169,15 @@ class HeartPlosion {
                 p.vy *
                 dt;
 
+
             p.vy +=
                 0.025 *
                 dt;
 
+
             p.rotation +=
                 p.rotationSpeed;
+
 
             p.alpha *=
                 0.985;
@@ -1928,23 +2185,29 @@ class HeartPlosion {
 
             ctx.save();
 
+
             ctx.translate(
                 p.x,
                 p.y
             );
 
+
             ctx.rotate(
                 p.rotation
             );
 
+
             ctx.globalAlpha =
                 p.alpha;
+
 
             ctx.fillStyle =
                 "#ff9fc4";
 
+
             ctx.shadowBlur =
                 12;
+
 
             ctx.shadowColor =
                 "#ff4c91";
@@ -1952,41 +2215,41 @@ class HeartPlosion {
 
             ctx.beginPath();
 
+
             ctx.ellipse(
                 0,
                 0,
-
-                p.size *
-                0.55,
-
+                p.size * 0.55,
                 p.size,
-
                 0,
-
                 0,
-
-                Math.PI *
-                2
+                Math.PI * 2
             );
 
+
             ctx.fill();
+
 
             ctx.restore();
         }
     }
 
 
-    /* =========================================================
-       ENTER GALLERY
-    ========================================================= */
+    // =========================================================
+    // GALLERY
+    // =========================================================
 
     enterGallery() {
 
         this.state =
             "gallery";
 
+
+        // Always start with Photo 1
+
         this.currentPhoto =
             0;
+
 
         this.photoTransition =
             1;
@@ -1994,14 +2257,22 @@ class HeartPlosion {
         this.photoTransitionDirection =
             0;
 
+
+        // Reset swipe tracking so the hand
+        // movement that triggered the gallery
+        // does not immediately skip Photo 1.
+
         this.previousLeftX =
             null;
 
         this.leftSwipeStartX =
             null;
 
-        this.swipeLocked =
-            false;
+
+        // Short settling period
+
+        this.leftSwipeCooldown =
+            18;
 
 
         if (this.status) {
@@ -2014,10 +2285,6 @@ class HeartPlosion {
     }
 
 
-    /* =========================================================
-       NEXT PHOTO
-    ========================================================= */
-
     nextPhoto() {
 
         if (
@@ -2027,6 +2294,7 @@ class HeartPlosion {
         ) {
 
             this.currentPhoto++;
+
 
             this.photoTransition =
                 0;
@@ -2055,10 +2323,6 @@ class HeartPlosion {
     }
 
 
-    /* =========================================================
-       PREVIOUS PHOTO
-    ========================================================= */
-
     previousPhoto() {
 
         if (
@@ -2067,6 +2331,7 @@ class HeartPlosion {
         ) {
 
             this.currentPhoto--;
+
 
             this.photoTransition =
                 0;
@@ -2091,9 +2356,9 @@ class HeartPlosion {
     }
 
 
-    /* =========================================================
-       POLAROID
-    ========================================================= */
+    // =========================================================
+    // POLAROID
+    // =========================================================
 
     drawPolaroid() {
 
@@ -2104,6 +2369,7 @@ class HeartPlosion {
 
 
         if (!img) {
+
             return;
         }
 
@@ -2119,7 +2385,8 @@ class HeartPlosion {
 
 
         const mobile =
-            cw < 650;
+            cw <
+            650;
 
 
         const cardWidth =
@@ -2136,12 +2403,21 @@ class HeartPlosion {
             1.16;
 
 
+        const x =
+            cw *
+            0.5 -
+            cardWidth *
+            0.5;
+
+
         const y =
             ch *
             0.47 -
             cardHeight *
             0.5;
 
+
+        // Gentle floating motion
 
         const float =
             Math.sin(
@@ -2154,13 +2430,46 @@ class HeartPlosion {
         ctx.save();
 
 
-        ctx.translate(
+        // -----------------------------------------------------
+        // Smooth slide transition
+        // -----------------------------------------------------
+
+        const transitionProgress =
+            Math.min(
+                1,
+                this.photoTransition
+            );
+
+
+        const eased =
+            1 -
+            Math.pow(
+                1 -
+                transitionProgress,
+                3
+            );
+
+
+        const slideDistance =
             cw *
-            0.5,
+            0.18;
+
+
+        const slideOffset =
+            this.photoTransitionDirection *
+            slideDistance *
+            (
+                1 -
+                eased
+            );
+
+
+        ctx.translate(
+            cw * 0.5 +
+            slideOffset,
 
             y +
-            cardHeight *
-            0.5 +
+            cardHeight * 0.5 +
             float
         );
 
@@ -2178,28 +2487,37 @@ class HeartPlosion {
         );
 
 
+        // -----------------------------------------------------
+        // Shadow / glow
+        // -----------------------------------------------------
+
         ctx.shadowBlur =
             35;
 
-        ctx.shadowColor =
-            "rgba(255,80,170,0.25)";
 
+        ctx.shadowColor =
+            "rgba(255, 80, 170, 0.25)";
+
+
+        // -----------------------------------------------------
+        // Polaroid frame
+        // -----------------------------------------------------
 
         ctx.fillStyle =
             "#f3eadc";
 
 
         ctx.fillRect(
-            -cardWidth *
-            0.5,
-
-            -cardHeight *
-            0.5,
-
+            -cardWidth * 0.5,
+            -cardHeight * 0.5,
             cardWidth,
             cardHeight
         );
 
+
+        // -----------------------------------------------------
+        // Photo area
+        // -----------------------------------------------------
 
         const margin =
             cardWidth *
@@ -2231,6 +2549,7 @@ class HeartPlosion {
 
         ctx.save();
 
+
         ctx.beginPath();
 
         ctx.rect(
@@ -2242,6 +2561,8 @@ class HeartPlosion {
 
         ctx.clip();
 
+
+        // Cover image area while preserving aspect ratio
 
         const imageRatio =
             img.width /
@@ -2283,11 +2604,9 @@ class HeartPlosion {
         ctx.drawImage(
             img,
 
-            -drawW *
-            0.5,
+            -drawW * 0.5,
 
-            -drawH *
-            0.5,
+            -drawH * 0.5,
 
             drawW,
             drawH
@@ -2297,8 +2616,12 @@ class HeartPlosion {
         ctx.restore();
 
 
+        // -----------------------------------------------------
+        // Vintage overlay
+        // -----------------------------------------------------
+
         ctx.fillStyle =
-            "rgba(255,215,180,0.08)";
+            "rgba(255, 215, 180, 0.08)";
 
 
         ctx.fillRect(
@@ -2309,12 +2632,16 @@ class HeartPlosion {
         );
 
 
+        // -----------------------------------------------------
+        // Photo number
+        // -----------------------------------------------------
+
         ctx.shadowBlur =
             0;
 
 
         ctx.fillStyle =
-            "rgba(60,40,40,0.5)";
+            "rgba(60, 40, 40, 0.5)";
 
 
         ctx.font =
@@ -2341,34 +2668,24 @@ class HeartPlosion {
     }
 
 
-    /* =========================================================
-       FINAL HEART
-    ========================================================= */
+    // =========================================================
+    // FINAL HEART
+    // =========================================================
 
     finishGallery() {
 
         this.state =
             "ending";
 
+
         this.explosionTimer =
             0;
+
 
         if (this.status) {
 
             this.status.textContent =
                 "";
-        }
-
-
-        // Keep music alive.
-        if (
-            this.birthdaySong &&
-            this.birthdaySong.paused
-        ) {
-
-            this.birthdaySong
-                .play()
-                .catch(() => {});
         }
     }
 
@@ -2407,6 +2724,7 @@ class HeartPlosion {
             cw *
             0.5;
 
+
         const cy =
             ch *
             0.38;
@@ -2414,11 +2732,14 @@ class HeartPlosion {
 
         ctx.save();
 
+
         ctx.translate(
             cx,
             cy
         );
 
+
+        // Massive glow
 
         const glow =
             ctx.createRadialGradient(
@@ -2428,24 +2749,23 @@ class HeartPlosion {
 
                 0,
                 0,
-                size *
-                2.4
+                size * 2.4
             );
 
 
         glow.addColorStop(
             0,
-            "rgba(255,100,180,0.24)"
+            "rgba(255, 100, 180, 0.24)"
         );
 
         glow.addColorStop(
             0.45,
-            "rgba(180,80,255,0.12)"
+            "rgba(180, 80, 255, 0.12)"
         );
 
         glow.addColorStop(
             1,
-            "rgba(100,0,180,0)"
+            "rgba(100, 0, 180, 0)"
         );
 
 
@@ -2455,18 +2775,20 @@ class HeartPlosion {
 
         ctx.beginPath();
 
+
         ctx.arc(
             0,
             0,
-            size *
-            2.4,
+            size * 2.4,
             0,
-            Math.PI *
-            2
+            Math.PI * 2
         );
+
 
         ctx.fill();
 
+
+        // Heart path
 
         const gradient =
             ctx.createLinearGradient(
@@ -2501,11 +2823,12 @@ class HeartPlosion {
         ctx.fillStyle =
             gradient;
 
+
         ctx.shadowBlur =
             45;
 
         ctx.shadowColor =
-            "rgba(255,70,160,0.8)";
+            "rgba(255, 70, 160, 0.8)";
 
 
         ctx.beginPath();
@@ -2513,76 +2836,55 @@ class HeartPlosion {
 
         ctx.moveTo(
             0,
-            size *
-            0.75
+            size * 0.75
         );
 
 
         ctx.bezierCurveTo(
-            -size *
-            0.75,
-            size *
-            0.20,
+            -size * 0.75,
+            size * 0.20,
 
-            -size *
-            0.82,
-            -size *
-            0.45,
+            -size * 0.82,
+            -size * 0.45,
 
-            -size *
-            0.40,
-            -size *
-            0.62
+            -size * 0.40,
+            -size * 0.62
         );
 
 
         ctx.bezierCurveTo(
-            -size *
-            0.18,
-            -size *
-            0.72,
+            -size * 0.18,
+            -size * 0.72,
 
             0,
-            -size *
-            0.50,
+            -size * 0.50,
 
             0,
-            -size *
-            0.30
+            -size * 0.30
         );
 
 
         ctx.bezierCurveTo(
             0,
-            -size *
-            0.50,
+            -size * 0.50,
 
-            size *
-            0.18,
-            -size *
-            0.72,
+            size * 0.18,
+            -size * 0.72,
 
-            size *
-            0.40,
-            -size *
-            0.62
+            size * 0.40,
+            -size * 0.62
         );
 
 
         ctx.bezierCurveTo(
-            size *
-            0.82,
-            -size *
-            0.45,
+            size * 0.82,
+            -size * 0.45,
 
-            size *
-            0.75,
-            size *
-            0.20,
+            size * 0.75,
+            size * 0.20,
 
             0,
-            size *
-            0.75
+            size * 0.75
         );
 
 
@@ -2590,8 +2892,13 @@ class HeartPlosion {
 
         ctx.fill();
 
+
         ctx.restore();
 
+
+        // -----------------------------------------------------
+        // Final message
+        // -----------------------------------------------------
 
         const fade =
             Math.min(
@@ -2603,20 +2910,25 @@ class HeartPlosion {
 
         ctx.save();
 
+
         ctx.globalAlpha =
             fade;
+
 
         ctx.textAlign =
             "center";
 
+
         ctx.fillStyle =
             "#fff7fb";
+
 
         ctx.shadowBlur =
             18;
 
+
         ctx.shadowColor =
-            "rgba(255,100,180,0.6)";
+            "rgba(255, 100, 180, 0.6)";
 
 
         ctx.font =
@@ -2624,18 +2936,15 @@ class HeartPlosion {
                 23,
                 Math.min(
                     42,
-                    cw *
-                    0.055
+                    cw * 0.055
                 )
             )}px serif`;
 
 
         ctx.fillText(
             "Happy Birthday",
-            cw *
-            0.5,
-            ch *
-            0.70
+            cw * 0.5,
+            ch * 0.70
         );
 
 
@@ -2644,8 +2953,7 @@ class HeartPlosion {
                 17,
                 Math.min(
                     29,
-                    cw *
-                    0.035
+                    cw * 0.035
                 )
             )}px serif`;
 
@@ -2661,10 +2969,7 @@ class HeartPlosion {
 
                 ctx.fillText(
                     line,
-
-                    cw *
-                    0.5,
-
+                    cw * 0.5,
                     ch *
                     0.76 +
                     index *
@@ -2678,9 +2983,9 @@ class HeartPlosion {
     }
 
 
-    /* =========================================================
-       ANIMATION
-    ========================================================= */
+    // =========================================================
+    // ANIMATION
+    // =========================================================
 
     animate(timestamp) {
 
@@ -2698,41 +3003,81 @@ class HeartPlosion {
             timestamp;
 
 
-        const safeDt =
-            Math.min(
-                dt,
-                2
-            );
-
-
         this.time +=
             0.016 *
-            safeDt;
+            dt;
 
+
+        // Swipe cooldown
+
+        if (
+            this.leftSwipeCooldown >
+            0
+        ) {
+
+            this.leftSwipeCooldown -=
+                dt;
+        }
+
+
+        // -----------------------------------------------------
+        // Smooth heart
+        // -----------------------------------------------------
 
         this.heartProgress +=
             (
                 this.targetHeartProgress -
                 this.heartProgress
             ) *
-            0.08 *
-            safeDt;
+            0.045 *
+            dt;
 
+
+        // -----------------------------------------------------
+        // Smooth photo transition
+        // -----------------------------------------------------
+
+        if (
+            this.photoTransition <
+            1
+        ) {
+
+            this.photoTransition +=
+                0.12 *
+                dt;
+
+            if (
+                this.photoTransition >
+                1
+            ) {
+
+                this.photoTransition =
+                    1;
+            }
+        }
+
+
+        // -----------------------------------------------------
+        // Clear / background
+        // -----------------------------------------------------
 
         this.drawBackground();
 
         this.updateBackgroundParticles(
-            safeDt
+            dt
         );
 
 
-        /* =====================================================
-           HEART
-        ===================================================== */
+        // =====================================================
+        // HEART
+        // =====================================================
 
         if (
-            this.state === "heart" ||
-            this.state === "joining"
+            this.state ===
+                "heart" ||
+
+            this.state ===
+                "joining"
         ) {
 
             const size =
@@ -2744,12 +3089,11 @@ class HeartPlosion {
 
 
             this.drawHeart(
-
                 this.canvas.width *
-                0.5,
+                    0.5,
 
                 this.canvas.height *
-                0.46,
+                    0.46,
 
                 size,
 
@@ -2758,9 +3102,9 @@ class HeartPlosion {
         }
 
 
-        /* =====================================================
-           EXPLOSION
-        ===================================================== */
+        // =====================================================
+        // EXPLOSION
+        // =====================================================
 
         if (
             this.state ===
@@ -2768,21 +3112,29 @@ class HeartPlosion {
         ) {
 
             this.explosionTimer +=
-                safeDt;
+                dt;
 
 
             this.updateExplosionParticles(
-                safeDt
+                dt
             );
+
 
             this.updateButterflies(
-                safeDt
+                dt
             );
+
 
             this.updatePetals(
-                safeDt
+                dt
             );
 
+
+            /*
+                After the initial burst, let the
+                butterflies/petals linger before
+                revealing the first Polaroid.
+            */
 
             if (
                 this.explosionTimer >
@@ -2794,9 +3146,9 @@ class HeartPlosion {
         }
 
 
-        /* =====================================================
-           GALLERY
-        ===================================================== */
+        // =====================================================
+        // GALLERY
+        // =====================================================
 
         if (
             this.state ===
@@ -2804,20 +3156,22 @@ class HeartPlosion {
         ) {
 
             this.updateButterflies(
-                safeDt
+                dt
             );
 
+
             this.updatePetals(
-                safeDt
+                dt
             );
+
 
             this.drawPolaroid();
         }
 
 
-        /* =====================================================
-           ENDING
-        ===================================================== */
+        // =====================================================
+        // ENDING
+        // =====================================================
 
         if (
             this.state ===
@@ -2825,20 +3179,26 @@ class HeartPlosion {
         ) {
 
             this.explosionTimer +=
-                safeDt;
+                dt;
 
 
             this.updateButterflies(
-                safeDt
+                dt
             );
 
+
             this.updatePetals(
-                safeDt
+                dt
             );
+
 
             this.drawFinalHeart();
         }
 
+
+        // -----------------------------------------------------
+        // Continue
+        // -----------------------------------------------------
 
         requestAnimationFrame(
             (ts) =>
@@ -2848,9 +3208,9 @@ class HeartPlosion {
 }
 
 
-/* ============================================================
-   START
-============================================================ */
+// ============================================================
+// START
+// ============================================================
 
 window.addEventListener(
     "DOMContentLoaded",
